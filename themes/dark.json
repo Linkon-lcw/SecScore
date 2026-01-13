@@ -1,0 +1,23 @@
+{
+  "name": "极客深蓝",
+  "id": "dark-default",
+  "mode": "dark",
+  "config": {
+    "tdesign": {
+      "brandColor": "#0052D9",
+      "warningColor": "#E37318",
+      "errorColor": "#D32029",
+      "successColor": "#248232"
+    },
+    "custom": {
+      "--ss-bg-color": "#121212",
+      "--ss-card-bg": "#1e1e1e",
+      "--ss-text-main": "#ffffff",
+      "--ss-text-secondary": "#a0a0a0",
+      "--ss-border-color": "#333333",
+      "--ss-header-bg": "#1e1e1e",
+      "--ss-sidebar-bg": "#1e1e1e",
+      "--ss-item-hover": "#2c2c2c"
+    }
+  }
+}

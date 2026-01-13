@@ -1,0 +1,23 @@
+{
+  "name": "极简浅色",
+  "id": "light-default",
+  "mode": "light",
+  "config": {
+    "tdesign": {
+      "brandColor": "#0052D9",
+      "warningColor": "#ED7B2F",
+      "errorColor": "#D54941",
+      "successColor": "#2BA471"
+    },
+    "custom": {
+      "--ss-bg-color": "#f3f3f3",
+      "--ss-card-bg": "#ffffff",
+      "--ss-text-main": "#181818",
+      "--ss-text-secondary": "#666666",
+      "--ss-border-color": "#dcdcdc",
+      "--ss-header-bg": "#ffffff",
+      "--ss-sidebar-bg": "#ffffff",
+      "--ss-item-hover": "#f3f3f3"
+    }
+  }
+}
