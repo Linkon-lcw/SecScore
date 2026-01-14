@@ -15,22 +15,22 @@
 
 ### 2.1 客户端请求 (Request)
 
-| 字段 | 类型 | 必填 | 说明 |
-| :--- | :--- | :--- | :--- |
-| **`seq`** | String | Yes | 请求唯一序列号 (如 UUID) |
-| **`category`** | String | Yes | 资源类别: `"system"`, `"student"`, `"group"`, `"event"` |
-| **`action`** | String | Yes | 操作动作: `"define"`, `"create"`, `"query"`, `"update"`, `"delete"` |
-| **`payload`** | Object | Yes | 具体操作参数，结构依 `action` 而定 |
+| 字段           | 类型   | 必填 | 说明                                                                |
+| :------------- | :----- | :--- | :------------------------------------------------------------------ |
+| **`seq`**      | String | Yes  | 请求唯一序列号 (如 UUID)                                            |
+| **`category`** | String | Yes  | 资源类别: `"system"`, `"student"`, `"group"`, `"event"`             |
+| **`action`**   | String | Yes  | 操作动作: `"define"`, `"create"`, `"query"`, `"update"`, `"delete"` |
+| **`payload`**  | Object | Yes  | 具体操作参数，结构依 `action` 而定                                  |
 
 ### 2.2 服务端响应 (Response)
 
-| 字段 | 类型 | 必填 | 说明 |
-| :--- | :--- | :--- | :--- |
-| **`seq`** | String | Yes | 对应请求的 `seq` |
-| **`status`** | String | Yes | `"ok"` 或 `"error"` |
-| **`code`** | Int | Yes | 状态码 (见第 6 节) |
-| **`message`** | String | No | 错误描述或提示信息 |
-| **`data`** | Object | No | 成功时的返回数据 |
+| 字段          | 类型   | 必填 | 说明                |
+| :------------ | :----- | :--- | :------------------ |
+| **`seq`**     | String | Yes  | 对应请求的 `seq`    |
+| **`status`**  | String | Yes  | `"ok"` 或 `"error"` |
+| **`code`**    | Int    | Yes  | 状态码 (见第 6 节)  |
+| **`message`** | String | No   | 错误描述或提示信息  |
+| **`data`**    | Object | No   | 成功时的返回数据    |
 
 ---
 
@@ -44,17 +44,17 @@
 
 ```json
 {
-    "category": "system",
-    "action": "define",
-    "payload": {
-        "target": "student",  // 或 "group"
-        "schema": {
-            "name": "string",
-            "age": "int",
-            "score": "double",
-            "active": "int"
-        }
+  "category": "system",
+  "action": "define",
+  "payload": {
+    "target": "student", // 或 "group"
+    "schema": {
+      "name": "string",
+      "age": "int",
+      "score": "double",
+      "active": "int"
     }
+  }
 }
 ```
 
@@ -76,22 +76,22 @@
 
 ```json
 {
-    "category": "student",
-    "action": "create",
-    "payload": {
-        "items": [
-            {
-                "index": 0,      // 客户端临时索引
-                "id": null,      // [请求分配ID]
-                "data": { "name": "Alice", "age": 18, "score": 95.5 }
-            },
-            {
-                "index": 1,
-                "id": 10086,     // [强制指定ID]
-                "data": { "name": "Bob", "age": 20 }
-            }
-        ]
-    }
+  "category": "student",
+  "action": "create",
+  "payload": {
+    "items": [
+      {
+        "index": 0, // 客户端临时索引
+        "id": null, // [请求分配ID]
+        "data": { "name": "Alice", "age": 18, "score": 95.5 }
+      },
+      {
+        "index": 1,
+        "id": 10086, // [强制指定ID]
+        "data": { "name": "Bob", "age": 20 }
+      }
+    ]
+  }
 }
 ```
 
@@ -99,19 +99,19 @@
 
 ```json
 {
-    "count": 2, // 成功数量
-    "results": [
-        {
-            "index": 0,
-            "success": true,
-            "id": 1001 // 服务端分配的新 ID
-        },
-        {
-            "index": 1,
-            "success": true,
-            "id": 10086
-        }
-    ]
+  "count": 2, // 成功数量
+  "results": [
+    {
+      "index": 0,
+      "success": true,
+      "id": 1001 // 服务端分配的新 ID
+    },
+    {
+      "index": 1,
+      "success": true,
+      "id": 10086
+    }
+  ]
 }
 ```
 
@@ -123,38 +123,38 @@
 
 ```json
 {
-    "category": "student",
-    "action": "query",
-    "payload": {
-        "logic": {
-            "op": "AND", // 根节点逻辑: AND, OR
-            "rules": [
-                { "field": "score", "op": ">=", "val": 90.0 },
-                { 
-                    "op": "OR", 
-                    "rules": [
-                        { "field": "age", "op": "<", "val": 20 },
-                        { "field": "name", "op": "==", "val": "Alice" }
-                    ]
-                }
-            ]
+  "category": "student",
+  "action": "query",
+  "payload": {
+    "logic": {
+      "op": "AND", // 根节点逻辑: AND, OR
+      "rules": [
+        { "field": "score", "op": ">=", "val": 90.0 },
+        {
+          "op": "OR",
+          "rules": [
+            { "field": "age", "op": "<", "val": 20 },
+            { "field": "name", "op": "==", "val": "Alice" }
+          ]
         }
+      ]
     }
+  }
 }
 ```
 
-*支持的操作符 (`op`): `==`, `!=`, `>`, `<`, `>=`, `<=`*
+_支持的操作符 (`op`): `==`, `!=`, `>`, `<`, `>=`, `<=`_
 
 **Response Data:**
 
 ```json
 {
-    "items": [
-        {
-            "id": 1001,
-            "data": { "name": "Alice", "age": 18, "score": 95.5 }
-        }
-    ]
+  "items": [
+    {
+      "id": 1001,
+      "data": { "name": "Alice", "age": 18, "score": 95.5 }
+    }
+  ]
 }
 ```
 
@@ -164,15 +164,15 @@
 
 ```json
 {
-    "category": "student",
-    "action": "update",
-    "payload": {
-        "id": 1001,
-        "set": {
-            "score": 98.0, // 仅更新指定字段
-            "age": 19
-        }
+  "category": "student",
+  "action": "update",
+  "payload": {
+    "id": 1001,
+    "set": {
+      "score": 98.0, // 仅更新指定字段
+      "age": 19
     }
+  }
 }
 ```
 
@@ -182,11 +182,11 @@
 
 ```json
 {
-    "category": "student",
-    "action": "delete",
-    "payload": {
-        "id": 1001
-    }
+  "category": "student",
+  "action": "delete",
+  "payload": {
+    "id": 1001
+  }
 }
 ```
 
@@ -200,16 +200,16 @@
 
 ```json
 {
-    "category": "event",
-    "action": "create",
-    "payload": {
-        "id": null,     // 必须为 null
-        "type": 1,      // 1=Student, 2=Group
-        "ref_id": 1001, // 关联对象的 ID
-        "desc": "Score adjustment",
-        "val_prev": 95.5,
-        "val_curr": 98.0
-    }
+  "category": "event",
+  "action": "create",
+  "payload": {
+    "id": null, // 必须为 null
+    "type": 1, // 1=Student, 2=Group
+    "ref_id": 1001, // 关联对象的 ID
+    "desc": "Score adjustment",
+    "val_prev": 95.5,
+    "val_curr": 98.0
+  }
 }
 ```
 
@@ -217,8 +217,8 @@
 
 ```json
 {
-    "id": 501,       // 新生成的 Event ID
-    "timestamp": 1710000000
+  "id": 501, // 新生成的 Event ID
+  "timestamp": 1710000000
 }
 ```
 
@@ -228,12 +228,12 @@
 
 ```json
 {
-    "category": "event",
-    "action": "update",
-    "payload": {
-        "id": 501,
-        "erased": true
-    }
+  "category": "event",
+  "action": "update",
+  "payload": {
+    "id": 501,
+    "erased": true
+  }
 }
 ```
 
@@ -241,10 +241,10 @@
 
 ## 6. 状态码定义 (Status Codes)
 
-| Code | Meaning | Description |
-| :--- | :--- | :--- |
-| **200** | OK | 请求成功执行 |
-| **400** | Bad Request | JSON 格式错误、缺少必填字段或 `action` 不支持 |
-| **404** | Not Found | 指定的 ID 不存在 |
-| **422** | Unprocessable | 数据类型不匹配 (如给 Int 字段传 String) |
-| **500** | Internal Error | 核心内部 C++ 异常 |
+| Code    | Meaning        | Description                                   |
+| :------ | :------------- | :-------------------------------------------- |
+| **200** | OK             | 请求成功执行                                  |
+| **400** | Bad Request    | JSON 格式错误、缺少必填字段或 `action` 不支持 |
+| **404** | Not Found      | 指定的 ID 不存在                              |
+| **422** | Unprocessable  | 数据类型不匹配 (如给 Int 字段传 String)       |
+| **500** | Internal Error | 核心内部 C++ 异常                             |

@@ -1,0 +1,24 @@
+{
+  "name": "校园青绿",
+  "id": "light-green",
+  "mode": "light",
+  "config": {
+    "tdesign": {
+      "brandColor": "#1ABC9C",
+      "warningColor": "#F5B041",
+      "errorColor": "#E74C3C",
+      "successColor": "#27AE60"
+    },
+    "custom": {
+      "--ss-bg-color": "#F0F9F6",
+      "--ss-card-bg": "#FFFFFF",
+      "--ss-text-main": "#123D2B",
+      "--ss-text-secondary": "#5F7D6C",
+      "--ss-border-color": "#D1E9DD",
+      "--ss-header-bg": "#FFFFFF",
+      "--ss-sidebar-bg": "#FFFFFF",
+      "--ss-item-hover": "#E1F3EB"
+    }
+  }
+}
+

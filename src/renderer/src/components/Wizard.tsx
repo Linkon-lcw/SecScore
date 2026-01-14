@@ -1,38 +1,48 @@
-import React, { useState } from 'react';
-import { Dialog, Form, Select, Input, Switch, MessagePlugin, Space, Typography } from 'tdesign-react';
-import { useTheme } from '../contexts/ThemeContext';
+import React, { useState } from 'react'
+import {
+  Dialog,
+  Form,
+  Select,
+  Input,
+  Switch,
+  MessagePlugin,
+  Space,
+  Typography
+} from 'tdesign-react'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface WizardProps {
-  visible: boolean;
-  onComplete: () => void;
+  visible: boolean
+  onComplete: () => void
 }
 
 export const Wizard: React.FC<WizardProps> = ({ visible, onComplete }) => {
-  const { themes, currentTheme, setTheme } = useTheme();
-  const [loading, setLoading] = useState(false);
+  const { themes, currentTheme, setTheme } = useTheme()
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     sync_mode: 'local',
     ws_server: 'ws://localhost:8080'
-  });
+  })
 
   const handleFinish = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
+      if (!(window as any).api) throw new Error('api not ready')
       // 1. 保存模式
-      await (window as any).api.updateSetting('sync_mode', formData.sync_mode);
+      await (window as any).api.updateSetting('sync_mode', formData.sync_mode)
       // 2. 保存服务器地址
-      await (window as any).api.updateSetting('ws_server', formData.ws_server);
+      await (window as any).api.updateSetting('ws_server', formData.ws_server)
       // 3. 标记向导已完成
-      await (window as any).api.updateSetting('is_wizard_completed', '1');
-      
-      MessagePlugin.success('配置完成！');
-      onComplete();
-    } catch (e) {
-      MessagePlugin.error('配置保存失败');
+      await (window as any).api.updateSetting('is_wizard_completed', '1')
+
+      MessagePlugin.success('配置完成！')
+      onComplete()
+    } catch {
+      MessagePlugin.error('配置保存失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Dialog
@@ -51,11 +61,8 @@ export const Wizard: React.FC<WizardProps> = ({ visible, onComplete }) => {
 
       <Form labelWidth={100}>
         <Form.FormItem label="外观主题">
-          <Select 
-            value={currentTheme?.id} 
-            onChange={(v) => setTheme(v as string)}
-          >
-            {themes.map(t => (
+          <Select value={currentTheme?.id} onChange={(v) => setTheme(v as string)}>
+            {themes.map((t) => (
               <Select.Option key={t.id} value={t.id} label={t.name} />
             ))}
           </Select>
@@ -63,9 +70,11 @@ export const Wizard: React.FC<WizardProps> = ({ visible, onComplete }) => {
 
         <Form.FormItem label="同步模式">
           <Space align="center">
-            <Switch 
-              value={formData.sync_mode === 'remote'} 
-              onChange={(v) => setFormData(prev => ({ ...prev, sync_mode: v ? 'remote' : 'local' }))}
+            <Switch
+              value={formData.sync_mode === 'remote'}
+              onChange={(v) =>
+                setFormData((prev) => ({ ...prev, sync_mode: v ? 'remote' : 'local' }))
+              }
             />
             <span style={{ fontSize: '14px' }}>
               {formData.sync_mode === 'remote' ? '远程同步模式' : '纯本地模式'}
@@ -75,14 +84,14 @@ export const Wizard: React.FC<WizardProps> = ({ visible, onComplete }) => {
 
         {formData.sync_mode === 'remote' && (
           <Form.FormItem label="服务器地址">
-            <Input 
-              value={formData.ws_server} 
-              onChange={(v) => setFormData(prev => ({ ...prev, ws_server: v }))}
+            <Input
+              value={formData.ws_server}
+              onChange={(v) => setFormData((prev) => ({ ...prev, ws_server: v }))}
               placeholder="ws://localhost:8080"
             />
           </Form.FormItem>
         )}
       </Form>
     </Dialog>
-  );
-};
+  )
+}

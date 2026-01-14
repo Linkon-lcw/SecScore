@@ -1,0 +1,24 @@
+{
+  "name": "冷静青蓝",
+  "id": "dark-cyan",
+  "mode": "dark",
+  "config": {
+    "tdesign": {
+      "brandColor": "#16A085",
+      "warningColor": "#F39C12",
+      "errorColor": "#E74C3C",
+      "successColor": "#1ABC9C"
+    },
+    "custom": {
+      "--ss-bg-color": "#050B10",
+      "--ss-card-bg": "#0F1A23",
+      "--ss-text-main": "#E5F7FF",
+      "--ss-text-secondary": "#7FA4B8",
+      "--ss-border-color": "#1F3645",
+      "--ss-header-bg": "#0F1A23",
+      "--ss-sidebar-bg": "#0F1A23",
+      "--ss-item-hover": "#182635"
+    }
+  }
+}
+

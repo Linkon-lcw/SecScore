@@ -1,0 +1,24 @@
+{
+  "name": "星空紫蓝",
+  "id": "dark-purple",
+  "mode": "dark",
+  "config": {
+    "tdesign": {
+      "brandColor": "#8E44AD",
+      "warningColor": "#F1C40F",
+      "errorColor": "#E74C3C",
+      "successColor": "#2ECC71"
+    },
+    "custom": {
+      "--ss-bg-color": "#0B0A1A",
+      "--ss-card-bg": "#18152C",
+      "--ss-text-main": "#F5F3FF",
+      "--ss-text-secondary": "#A69AC7",
+      "--ss-border-color": "#332F4D",
+      "--ss-header-bg": "#18152C",
+      "--ss-sidebar-bg": "#18152C",
+      "--ss-item-hover": "#252046"
+    }
+  }
+}
+

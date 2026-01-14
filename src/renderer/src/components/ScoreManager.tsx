@@ -1,0 +1,259 @@
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  Form,
+  Select,
+  Radio,
+  Input,
+  InputNumber,
+  Button,
+  MessagePlugin,
+  Card,
+  Table,
+  PrimaryTableCol,
+  Tag,
+  Space,
+  Popconfirm
+} from 'tdesign-react'
+import { RollbackIcon } from 'tdesign-icons-react'
+
+interface Student {
+  id: number
+  name: string
+  score: number
+}
+
+interface Reason {
+  id: number
+  content: string
+  delta: number
+  category: string
+}
+
+interface ScoreEvent {
+  id: number
+  uuid: string
+  student_name: string
+  reason_content: string
+  delta: number
+  val_prev: number
+  val_curr: number
+  event_time: string
+}
+
+export const ScoreManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
+  const [students, setStudents] = useState<Student[]>([])
+  const [reasons, setReasons] = useState<Reason[]>([])
+  const [events, setEvents] = useState<ScoreEvent[]>([])
+  const [loading, setLoading] = useState(false)
+  const [submitLoading, setSubmitLoading] = useState(false)
+  const [form] = Form.useForm()
+
+  const emitDataUpdated = (category: 'events' | 'students' | 'reasons' | 'all') => {
+    window.dispatchEvent(new CustomEvent('ss:data-updated', { detail: { category } }))
+  }
+
+  const fetchData = useCallback(async () => {
+    if (!(window as any).api) return
+    setLoading(true)
+    const [stuRes, reaRes, eveRes] = await Promise.all([
+      (window as any).api.queryStudents({}),
+      (window as any).api.queryReasons(),
+      (window as any).api.queryEvents({ limit: 10 })
+    ])
+
+    if (stuRes.success) setStudents(stuRes.data)
+    if (reaRes.success) setReasons(reaRes.data)
+    if (eveRes.success) setEvents(eveRes.data)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+    const onDataUpdated = (e: any) => {
+      const category = e?.detail?.category
+      if (
+        category === 'events' ||
+        category === 'students' ||
+        category === 'reasons' ||
+        category === 'all'
+      ) {
+        fetchData()
+      }
+    }
+    window.addEventListener('ss:data-updated', onDataUpdated as any)
+    return () => window.removeEventListener('ss:data-updated', onDataUpdated as any)
+  }, [fetchData])
+
+  const handleSubmit = async () => {
+    if (!(window as any).api) return
+    if (!canEdit) {
+      MessagePlugin.error('当前为只读权限')
+      return
+    }
+    const values = form.getFieldsValue(true) as any
+    if (!values.student_name || !values.delta || !values.reason_content) {
+      MessagePlugin.warning('请填写完整信息')
+      return
+    }
+
+    setSubmitLoading(true)
+    const delta = values.type === 'subtract' ? -Math.abs(values.delta) : Math.abs(values.delta)
+
+    const res = await (window as any).api.createEvent({
+      student_name: values.student_name,
+      reason_content: values.reason_content,
+      delta: delta
+    })
+
+    if (res.success) {
+      MessagePlugin.success('积分提交成功')
+      form.setFieldsValue({ delta: undefined, reason_content: '', reason_id: undefined })
+      fetchData()
+      emitDataUpdated('events')
+    } else {
+      MessagePlugin.error(res.message || '提交失败')
+    }
+    setSubmitLoading(false)
+  }
+
+  const handleUndo = async (uuid: string) => {
+    if (!(window as any).api) return
+    if (!canEdit) {
+      MessagePlugin.error('当前为只读权限')
+      return
+    }
+    const res = await (window as any).api.deleteEvent(uuid)
+    if (res.success) {
+      MessagePlugin.success('已撤销操作')
+      fetchData()
+      emitDataUpdated('events')
+    } else {
+      MessagePlugin.error(res.message || '撤销失败')
+    }
+  }
+
+  const columns: PrimaryTableCol<ScoreEvent>[] = [
+    { colKey: 'student_name', title: '学生', width: 100 },
+    {
+      colKey: 'delta',
+      title: '变动',
+      width: 80,
+      cell: ({ row }) => (
+        <Tag theme={row.delta > 0 ? 'success' : 'danger'} variant="light">
+          {row.delta > 0 ? `+${row.delta}` : row.delta}
+        </Tag>
+      )
+    },
+    { colKey: 'reason_content', title: '理由', ellipsis: true },
+    {
+      colKey: 'event_time',
+      title: '时间',
+      width: 160,
+      cell: ({ row }) => new Date(row.event_time).toLocaleString()
+    },
+    {
+      colKey: 'operation',
+      title: '操作',
+      width: 80,
+      cell: ({ row }) => (
+        <Popconfirm
+          content="确定要撤销这条记录吗？学生积分将回滚。"
+          onConfirm={() => handleUndo(row.uuid)}
+        >
+          <Button variant="text" theme="warning" disabled={!canEdit} icon={<RollbackIcon />}>
+            撤销
+          </Button>
+        </Popconfirm>
+      )
+    }
+  ]
+
+  return (
+    <div style={{ padding: '24px' }}>
+      <h2 style={{ marginBottom: '24px', color: 'var(--ss-text-main)' }}>积分管理</h2>
+
+      <Card style={{ marginBottom: '24px', backgroundColor: 'var(--ss-card-bg)' }}>
+        <Form
+          form={form}
+          labelWidth={80}
+          initialData={{ type: 'add' }}
+          onReset={() => form.setFieldsValue({ type: 'add' })}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            <Form.FormItem label="姓名" name="student_name">
+              <Select
+                filterable
+                placeholder="请选择或搜索学生"
+                options={students.map((s) => ({ label: s.name, value: s.name }))}
+              />
+            </Form.FormItem>
+
+            <Form.FormItem label="分数" name="delta">
+              <Space>
+                <Form.FormItem name="type" style={{ marginBottom: 0 }}>
+                  <Radio.Group variant="default-filled">
+                    <Radio.Button value="add">加分</Radio.Button>
+                    <Radio.Button value="subtract">扣分</Radio.Button>
+                  </Radio.Group>
+                </Form.FormItem>
+                <InputNumber min={1} placeholder="分值" style={{ width: '120px' }} />
+              </Space>
+            </Form.FormItem>
+
+            <Form.FormItem label="快捷理由" name="reason_id">
+              <Select
+                placeholder="选择预设理由"
+                onChange={(v) => {
+                  const id = Number(v)
+                  if (!Number.isFinite(id)) return
+                  const reason = reasons.find((r) => r.id === id)
+                  if (!reason) return
+                  form.setFieldsValue({
+                    reason_content: reason.content,
+                    delta: Math.abs(reason.delta),
+                    type: reason.delta > 0 ? 'add' : 'subtract'
+                  })
+                }}
+              >
+                {reasons.map((r) => (
+                  <Select.Option key={r.id} value={r.id} label={r.content}>
+                    {r.content} ({r.delta > 0 ? `+${r.delta}` : r.delta})
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.FormItem>
+
+            <Form.FormItem label="理由内容" name="reason_content">
+              <Input placeholder="手动输入或选择快捷理由" />
+            </Form.FormItem>
+          </div>
+
+          <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center' }}>
+            <Button
+              theme="primary"
+              size="large"
+              disabled={!canEdit}
+              onClick={handleSubmit}
+              loading={submitLoading}
+              style={{ width: '200px' }}
+            >
+              确认提交
+            </Button>
+          </div>
+        </Form>
+      </Card>
+
+      <Card title="最近记录" style={{ backgroundColor: 'var(--ss-card-bg)' }}>
+        <Table
+          data={events}
+          columns={columns}
+          rowKey="uuid"
+          loading={loading}
+          size="small"
+          pagination={{ pageSize: 5, total: events.length }}
+          style={{ color: 'var(--ss-text-main)' }}
+        />
+      </Card>
+    </div>
+  )
+}

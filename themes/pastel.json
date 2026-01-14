@@ -1,0 +1,24 @@
+{
+  "name": "清新马卡龙",
+  "id": "light-pastel",
+  "mode": "light",
+  "config": {
+    "tdesign": {
+      "brandColor": "#FF9AA2",
+      "warningColor": "#FFB347",
+      "errorColor": "#FF6F69",
+      "successColor": "#B5EAD7"
+    },
+    "custom": {
+      "--ss-bg-color": "#FFF7F1",
+      "--ss-card-bg": "#FFFFFF",
+      "--ss-text-main": "#3A3A3A",
+      "--ss-text-secondary": "#8A8A8A",
+      "--ss-border-color": "#F1D3D3",
+      "--ss-header-bg": "#FFFFFF",
+      "--ss-sidebar-bg": "#FFFFFF",
+      "--ss-item-hover": "#FFE7E0"
+    }
+  }
+}
+

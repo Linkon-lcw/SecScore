@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import { electronAPI } from '@electron-toolkit/preload'
 import { ThemeConfig } from './types'
 
 const api = {
@@ -22,21 +23,47 @@ const api = {
   queryReasons: () => ipcRenderer.invoke('db:reason:query'),
   createReason: (data: any) => ipcRenderer.invoke('db:reason:create', data),
   updateReason: (id: number, data: any) => ipcRenderer.invoke('db:reason:update', id, data),
-  deleteReason: (id: number) => ipcRenderer.invoke('db:deleteReason', id),
+  deleteReason: (id: number) => ipcRenderer.invoke('db:reason:delete', id),
 
   // DB - Event
   queryEvents: (params: any) => ipcRenderer.invoke('db:event:query', params),
   createEvent: (data: any) => ipcRenderer.invoke('db:event:create', data),
+  deleteEvent: (uuid: string) => ipcRenderer.invoke('db:event:delete', uuid),
+  queryEventsByStudent: (params: any) => ipcRenderer.invoke('db:event:queryByStudent', params),
+  queryLeaderboard: (params: any) => ipcRenderer.invoke('db:leaderboard:query', params),
 
   // Settings & Sync
   getSettings: () => ipcRenderer.invoke('db:getSettings'),
   updateSetting: (key: string, value: string) => ipcRenderer.invoke('db:updateSetting', key, value),
   getSyncStatus: () => ipcRenderer.invoke('ws:getStatus'),
   triggerSync: () => ipcRenderer.invoke('ws:triggerSync'),
+
+  // Auth & Security
+  authGetStatus: () => ipcRenderer.invoke('auth:getStatus'),
+  authLogin: (password: string) => ipcRenderer.invoke('auth:login', password),
+  authLogout: () => ipcRenderer.invoke('auth:logout'),
+  authSetPasswords: (payload: { adminPassword?: string | null; pointsPassword?: string | null }) =>
+    ipcRenderer.invoke('auth:setPasswords', payload),
+  authGenerateRecovery: () => ipcRenderer.invoke('auth:generateRecovery'),
+  authResetByRecovery: (recoveryString: string) =>
+    ipcRenderer.invoke('auth:resetByRecovery', recoveryString),
+  authClearAll: () => ipcRenderer.invoke('auth:clearAll'),
+
+  // Data import/export
+  exportDataJson: () => ipcRenderer.invoke('data:exportJson'),
+  importDataJson: (jsonText: string) => ipcRenderer.invoke('data:importJson', jsonText),
+
+  // Logger
+  queryLogs: (lines?: number) => ipcRenderer.invoke('log:query', lines),
+  clearLogs: () => ipcRenderer.invoke('log:clear'),
+  setLogLevel: (level: string) => ipcRenderer.invoke('log:setLevel', level),
+  writeLog: (payload: { level: string; message: string; meta?: any }) =>
+    ipcRenderer.invoke('log:write', payload)
 }
 
 if (process.contextIsolated) {
   try {
+    contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
     console.error(error)

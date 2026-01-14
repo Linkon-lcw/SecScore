@@ -1,0 +1,24 @@
+{
+  "name": "暖阳琥珀",
+  "id": "light-amber",
+  "mode": "light",
+  "config": {
+    "tdesign": {
+      "brandColor": "#F39C12",
+      "warningColor": "#E67E22",
+      "errorColor": "#C0392B",
+      "successColor": "#27AE60"
+    },
+    "custom": {
+      "--ss-bg-color": "#FFF8E6",
+      "--ss-card-bg": "#FFFFFF",
+      "--ss-text-main": "#3A2A12",
+      "--ss-text-secondary": "#8A7350",
+      "--ss-border-color": "#F4D9A6",
+      "--ss-header-bg": "#FFFFFF",
+      "--ss-sidebar-bg": "#FFFFFF",
+      "--ss-item-hover": "#FFEAC2"
+    }
+  }
+}
+
