@@ -454,6 +454,26 @@ export const Home: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
     document.removeEventListener('mouseup', onGlobalMouseUp)
   }
 
+  // 触摸事件处理
+  const onNavTouchStart = (e: React.TouchEvent) => {
+    isNavDragging.current = true
+    if (e.touches[0]) {
+      handleNavAction(e.touches[0].clientY)
+    }
+  }
+
+  const onNavTouchMove = (e: React.TouchEvent) => {
+    if (isNavDragging.current && e.touches[0]) {
+      handleNavAction(e.touches[0].clientY)
+      // 防止触摸滑动时触发页面滚动
+      if (e.cancelable) e.preventDefault()
+    }
+  }
+
+  const onNavTouchEnd = () => {
+    isNavDragging.current = false
+  }
+
   // 渲染快速导航
   const renderQuickNav = () => {
     if (groupedStudents.length <= 1 || sortType === 'score' || (sortType === 'alphabet' && searchKeyword)) return null
@@ -462,6 +482,9 @@ export const Home: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
       <div
         ref={navContainerRef}
         onMouseDown={onNavMouseDown}
+        onTouchStart={onNavTouchStart}
+        onTouchMove={onNavTouchMove}
+        onTouchEnd={onNavTouchEnd}
         style={{
           position: 'fixed',
           right: '12px',
@@ -477,7 +500,8 @@ export const Home: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
           maxHeight: '80vh',
           border: '1px solid var(--ss-border-color)',
           cursor: 'pointer',
-          userSelect: 'none'
+          userSelect: 'none',
+          touchAction: 'none' // 关键：禁用浏览器的默认触摸处理
         }}
       >
         {groupedStudents.map((group) => (
