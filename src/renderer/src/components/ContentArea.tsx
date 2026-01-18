@@ -1,5 +1,6 @@
 import { Layout, Space, Button, Tag } from 'tdesign-react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Home } from './Home'
 import { StudentManager } from './StudentManager'
 import { Settings } from './Settings'
 import { ReasonManager } from './ReasonManager'
@@ -85,7 +86,7 @@ export function ContentArea({
 
       <Content style={{ flex: 1, overflowY: 'auto' }}>
         <Routes>
-          <Route path="/" element={<Navigate to="/score" replace />} />
+          <Route path="/" element={<Home canEdit={permission === 'admin' || permission === 'points'} />} />
           <Route path="/students" element={<StudentManager canEdit={permission === 'admin'} />} />
           <Route
             path="/score"
@@ -95,7 +96,7 @@ export function ContentArea({
           <Route path="/settlements" element={<SettlementHistory />} />
           <Route path="/reasons" element={<ReasonManager canEdit={permission === 'admin'} />} />
           <Route path="/settings" element={<Settings permission={permission} />} />
-          <Route path="*" element={<Navigate to="/score" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Content>
     </Layout>

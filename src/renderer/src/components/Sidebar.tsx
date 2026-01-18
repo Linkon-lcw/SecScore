@@ -1,5 +1,5 @@
 import { Layout, Menu } from 'tdesign-react'
-import { UserIcon, SettingIcon, HistoryIcon, RootListIcon, ViewListIcon } from 'tdesign-icons-react'
+import { UserIcon, SettingIcon, HistoryIcon, RootListIcon, ViewListIcon, HomeIcon } from 'tdesign-icons-react'
 import appLogo from '../assets/logo.svg'
 
 const { Aside } = Layout
@@ -60,6 +60,9 @@ export function Sidebar({ activeMenu, permission, onMenuChange }: SidebarProps):
 
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         <Menu value={activeMenu} onChange={onMenuChange} style={{ width: '100%', border: 'none' }}>
+          <Menu.MenuItem value="home" icon={<HomeIcon />}>
+            主页
+          </Menu.MenuItem>
           <Menu.MenuItem value="students" icon={<UserIcon />} disabled={permission !== 'admin'}>
             学生管理
           </Menu.MenuItem>

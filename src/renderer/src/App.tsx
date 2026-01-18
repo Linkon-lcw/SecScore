@@ -19,13 +19,14 @@ function MainContent(): React.JSX.Element {
 
   const activeMenu = useMemo(() => {
     const p = location.pathname
+    if (p === '/' || p.startsWith('/home')) return 'home'
     if (p.startsWith('/students')) return 'students'
     if (p.startsWith('/score')) return 'score'
     if (p.startsWith('/leaderboard')) return 'leaderboard'
     if (p.startsWith('/settlements')) return 'settlements'
     if (p.startsWith('/reasons')) return 'reasons'
     if (p.startsWith('/settings')) return 'settings'
-    return 'score'
+    return 'home'
   }, [location.pathname])
 
   useEffect(() => {
@@ -80,6 +81,7 @@ function MainContent(): React.JSX.Element {
 
   const onMenuChange = (v: string | number) => {
     const key = String(v)
+    if (key === 'home') navigate('/')
     if (key === 'students') navigate('/students')
     if (key === 'score') navigate('/score')
     if (key === 'leaderboard') navigate('/leaderboard')
