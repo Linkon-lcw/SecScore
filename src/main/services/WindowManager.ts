@@ -1,6 +1,6 @@
 import { Service } from '../../shared/kernel'
 import { MainContext } from '../context'
-import { BrowserWindow, shell } from 'electron'
+import { BrowserWindow, shell, screen } from 'electron'
 import type { BrowserWindowConstructorOptions } from 'electron'
 
 export type windowOpenInput = {
@@ -77,7 +77,6 @@ export class WindowManager extends Service {
 
     // Special positioning for global sidebar
     if (input.key === 'global-sidebar') {
-      const { screen } = require('electron')
       const primaryDisplay = screen.getPrimaryDisplay()
       const { width, height } = primaryDisplay.workAreaSize
       const winWidth = 84

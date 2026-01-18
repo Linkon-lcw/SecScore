@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Button, Tooltip } from 'tdesign-react'
-import { 
-  HomeIcon, 
-  ViewListIcon, 
-  UserAddIcon, 
-  ChevronRightIcon, 
+import {
+  HomeIcon,
+  ViewListIcon,
+  UserAddIcon,
+  ChevronRightIcon,
   ChevronLeftIcon,
   SettingIcon
 } from 'tdesign-icons-react'
@@ -12,15 +12,15 @@ import {
 export const GlobalSidebar: React.FC = () => {
   const [expanded, setExpanded] = useState(false)
   const [showToggle, setShowToggle] = useState(true)
-  
+
   const handleExpand = () => {
     // 1. 先隐藏三角
     setShowToggle(false)
-    
+
     // 2. 稍后扩大窗口
     setTimeout(() => {
       if ((window as any).api) {
-        (window as any).api.windowResize(84, 300)
+        ;(window as any).api.windowResize(84, 300)
       }
       // 3. 最后显示侧边栏内容
       setTimeout(() => {
@@ -32,11 +32,11 @@ export const GlobalSidebar: React.FC = () => {
   const handleCollapse = () => {
     // 1. 先隐藏侧边栏内容
     setExpanded(false)
-    
+
     // 2. 稍后缩小窗口
     setTimeout(() => {
       if ((window as any).api) {
-        (window as any).api.windowResize(24, 300)
+        ;(window as any).api.windowResize(24, 300)
       }
       // 3. 最后重新显示三角（等待透明度动画完成）
       setTimeout(() => {
@@ -47,11 +47,11 @@ export const GlobalSidebar: React.FC = () => {
 
   const openMain = () => {
     if (!(window as any).api) return
-    (window as any).api.openWindow({ key: 'main', route: '/' })
+    ;(window as any).api.openWindow({ key: 'main', route: '/' })
   }
 
   return (
-    <div 
+    <div
       style={{
         height: '100vh',
         width: '84px',
@@ -63,7 +63,7 @@ export const GlobalSidebar: React.FC = () => {
       }}
     >
       {/* 日常展示的三角 */}
-      <div 
+      <div
         onClick={handleExpand}
         className={`global-sidebar-toggle ${!showToggle ? 'hidden' : ''}`}
         style={{ willChange: 'opacity, transform' }}
@@ -72,7 +72,7 @@ export const GlobalSidebar: React.FC = () => {
       </div>
 
       {/* 侧边栏内容 */}
-      <div 
+      <div
         className={`sidebar-content-area ${expanded ? 'visible' : 'hidden'}`}
         style={{
           backgroundColor: 'var(--ss-card-bg)',
@@ -81,9 +81,9 @@ export const GlobalSidebar: React.FC = () => {
         }}
       >
         {/* 顶部的关闭/收起按钮 */}
-        <Button 
-          shape="circle" 
-          variant="text" 
+        <Button
+          shape="circle"
+          variant="text"
           onClick={handleCollapse}
           style={{ marginBottom: '8px', color: 'var(--td-brand-color)' }}
         >
@@ -103,13 +103,21 @@ export const GlobalSidebar: React.FC = () => {
         </Tooltip>
 
         <Tooltip content="排行榜" placement="left">
-          <Button shape="circle" variant="text" onClick={() => (window as any).api.openWindow({ key: 'main', route: '/leaderboard' })}>
+          <Button
+            shape="circle"
+            variant="text"
+            onClick={() => (window as any).api.openWindow({ key: 'main', route: '/leaderboard' })}
+          >
             <ViewListIcon size="24px" />
           </Button>
         </Tooltip>
 
         <Tooltip content="设置" placement="left">
-          <Button shape="circle" variant="text" onClick={() => (window as any).api.openWindow({ key: 'main', route: '/settings' })}>
+          <Button
+            shape="circle"
+            variant="text"
+            onClick={() => (window as any).api.openWindow({ key: 'main', route: '/settings' })}
+          >
             <SettingIcon size="24px" />
           </Button>
         </Tooltip>
