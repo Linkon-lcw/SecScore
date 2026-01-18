@@ -96,3 +96,40 @@ html[theme-mode='dark'] .ss-sidebar .t-menu__item.t-is-active svg:not([fill='non
   text-align: center;
   justify-content: center;
 }
+
+/* Global Sidebar Toggle Button */
+.global-sidebar-toggle {
+  width: 24px;
+  height: 60px;
+  background-color: var(--ss-card-bg);
+  border-radius: 8px 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+  border: 1px solid var(--ss-border-color);
+  border-right: none;
+  color: var(--ss-text-main);
+  z-index: 10;
+  flex-shrink: 0;
+  animation: twinkle-animation 3s infinite ease-in-out;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.global-sidebar-toggle:hover {
+  background-color: var(--ss-item-hover);
+  color: var(--td-brand-color);
+}
+
+@keyframes twinkle-animation {
+  0%, 100% {
+    box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: -4px 0 12px var(--td-brand-color-light), 0 0 15px var(--td-brand-color-focus);
+    filter: brightness(1.2);
+    color: var(--td-brand-color);
+  }
+}
