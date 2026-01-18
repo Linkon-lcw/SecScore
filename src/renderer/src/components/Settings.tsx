@@ -5,30 +5,31 @@ import {
   Form,
   Select,
   Input,
-  Switch,
   Button,
   Space,
   Divider,
   Tag,
   Dialog,
-  MessagePlugin,
-  DialogPlugin
+  MessagePlugin
 } from 'tdesign-react'
 import { useTheme } from '../contexts/ThemeContext'
 
-type PermissionLevel = 'admin' | 'points' | 'view'
+type permissionLevel = 'admin' | 'points' | 'view'
+type appSettings = {
+  is_wizard_completed: boolean
+  log_level: 'debug' | 'info' | 'warn' | 'error'
+}
 
-export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission }) => {
+export const Settings: React.FC<{ permission: permissionLevel }> = ({ permission }) => {
   const { themes, currentTheme, setTheme } = useTheme()
   const [activeTab, setActiveTab] = useState('appearance')
-  const [settings, setSettings] = useState<Record<string, string>>({})
-  const [syncStatus, setSyncStatus] = useState<{ connected: boolean; lastSync?: string }>({
-    connected: false
+  const [settings, setSettings] = useState<appSettings>({
+    is_wizard_completed: false,
+    log_level: 'info'
   })
-  const [loading, setLoading] = useState(false)
 
   const [securityStatus, setSecurityStatus] = useState<{
-    permission: PermissionLevel
+    permission: permissionLevel
     hasAdminPassword: boolean
     hasPointsPassword: boolean
     hasRecoveryString: boolean
@@ -53,6 +54,7 @@ export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission
   const importInputRef = useRef<HTMLInputElement | null>(null)
 
   const [settleLoading, setSettleLoading] = useState(false)
+  const [settleDialogVisible, setSettleDialogVisible] = useState(false)
 
   const canAdmin = permission === 'admin'
 
@@ -67,45 +69,35 @@ export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission
     )
   }, [permission])
 
-  const emitSettingUpdated = (key: string, value: string) => {
-    window.dispatchEvent(new CustomEvent('ss:settings-updated', { detail: { key, value } }))
-  }
-
   const emitDataUpdated = (category: 'events' | 'students' | 'reasons' | 'all') => {
     window.dispatchEvent(new CustomEvent('ss:data-updated', { detail: { category } }))
   }
 
   const loadAll = async () => {
     if (!(window as any).api) return
-    const res = await (window as any).api.getSettings()
-    if (res.success && res.data) setSettings(res.data)
-    const statusRes = await (window as any).api.getSyncStatus()
-    if (statusRes.success && statusRes.data) setSyncStatus(statusRes.data)
+    const res = await (window as any).api.getAllSettings()
+    if (res.success && res.data) {
+      setSettings(res.data)
+    }
     const authRes = await (window as any).api.authGetStatus()
     if (authRes.success && authRes.data) setSecurityStatus(authRes.data)
   }
 
   useEffect(() => {
     loadAll()
-    const timer = setInterval(async () => {
-      if (!(window as any).api) return
-      const statusRes = await (window as any).api.getSyncStatus()
-      if (statusRes.success && statusRes.data) setSyncStatus(statusRes.data)
-    }, 5000)
-    return () => clearInterval(timer)
-  }, [])
-
-  const handleUpdateSetting = async (key: string, value: string) => {
     if (!(window as any).api) return
-    const res = await (window as any).api.updateSetting(key, value)
-    if (res.success) {
-      setSettings((prev) => ({ ...prev, [key]: value }))
-      emitSettingUpdated(key, value)
-      MessagePlugin.success('设置已更新')
-    } else {
-      MessagePlugin.error(res.message || '设置更新失败')
+    const unsubscribe = (window as any).api.onSettingChanged((change: any) => {
+      setSettings((prev) => {
+        if (change?.key === 'log_level') return { ...prev, log_level: change.value }
+        if (change?.key === 'is_wizard_completed')
+          return { ...prev, is_wizard_completed: change.value }
+        return prev
+      })
+    })
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe()
     }
-  }
+  }, [])
 
   const showLogs = async () => {
     if (!(window as any).api) return
@@ -133,7 +125,7 @@ export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission
   }
 
   const downloadTextFile = (filename: string, text: string) => {
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const blob = new Blob(['\ufeff' + text], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -244,30 +236,7 @@ export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission
 
   const confirmSettlement = () => {
     if (!(window as any).api) return
-    const dialog = DialogPlugin.confirm({
-      header: '确认结算并重新开始？',
-      body: (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div>将把当前未结算的积分记录归档为一个阶段，并将所有学生当前积分清零。</div>
-          <div style={{ color: 'var(--ss-text-secondary)', fontSize: '12px' }}>
-            学生名单不变；结算后的历史在“结算历史”页面查看。
-          </div>
-        </div>
-      ),
-      confirmBtn: '结算',
-      onConfirm: async () => {
-        setSettleLoading(true)
-        const res = await (window as any).api.createSettlement()
-        setSettleLoading(false)
-        if (res.success && res.data) {
-          MessagePlugin.success('结算成功，已重新开始积分')
-          emitDataUpdated('all')
-          dialog.hide()
-        } else {
-          MessagePlugin.error(res.message || '结算失败')
-        }
-      }
-    })
+    setSettleDialogVisible(true)
   }
 
   return (
@@ -432,71 +401,6 @@ export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission
           </Card>
 
           <Card
-            title="同步设置 (远程模式)"
-            style={{
-              backgroundColor: 'var(--ss-card-bg)',
-              color: 'var(--ss-text-main)',
-              marginBottom: '16px'
-            }}
-          >
-            <Form labelWidth={120}>
-              <Form.FormItem label="同步模式">
-                <Space align="center">
-                  <Switch
-                    value={settings.sync_mode === 'remote'}
-                    onChange={(v) => handleUpdateSetting('sync_mode', v ? 'remote' : 'local')}
-                  />
-                  <span style={{ fontSize: '14px', color: 'var(--ss-text-secondary)' }}>
-                    {settings.sync_mode === 'remote' ? '远程同步模式' : '纯本地模式'}
-                  </span>
-                </Space>
-              </Form.FormItem>
-
-              <Form.FormItem label="服务器地址">
-                <Input
-                  value={settings.ws_server}
-                  onChange={(v) => setSettings((prev) => ({ ...prev, ws_server: v }))}
-                  onBlur={() => handleUpdateSetting('ws_server', settings.ws_server)}
-                  placeholder="ws://localhost:8080"
-                  style={{ width: '320px' }}
-                  disabled={settings.sync_mode !== 'remote'}
-                />
-              </Form.FormItem>
-
-              <Divider />
-
-              <Form.FormItem label="同步状态">
-                <Space align="center">
-                  <Tag theme={syncStatus.connected ? 'success' : 'default'} variant="light">
-                    {syncStatus.connected ? '已连接' : '未连接'}
-                  </Tag>
-                  {syncStatus.lastSync && (
-                    <span style={{ fontSize: '12px', color: 'var(--ss-text-secondary)' }}>
-                      上次同步: {new Date(syncStatus.lastSync).toLocaleString()}
-                    </span>
-                  )}
-                  <Button
-                    size="small"
-                    variant="outline"
-                    loading={loading}
-                    disabled={settings.sync_mode !== 'remote' || !syncStatus.connected}
-                    onClick={async () => {
-                      if (!(window as any).api) return
-                      setLoading(true)
-                      const res = await (window as any).api.triggerSync()
-                      setLoading(false)
-                      if (res.success) MessagePlugin.success('同步完成')
-                      else MessagePlugin.error('同步失败: ' + res.message)
-                    }}
-                  >
-                    立即对齐数据
-                  </Button>
-                </Space>
-              </Form.FormItem>
-            </Form>
-          </Card>
-
-          <Card
             style={{
               backgroundColor: 'var(--ss-card-bg)',
               color: 'var(--ss-text-main)',
@@ -535,12 +439,13 @@ export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission
             <Form labelWidth={120}>
               <Form.FormItem label="日志级别">
                 <Select
-                  value={settings.log_level || 'info'}
+                  value={settings.log_level}
                   onChange={async (v) => {
                     if (!(window as any).api) return
-                    const res = await (window as any).api.setLogLevel(String(v))
+                    const next = String(v) as any
+                    const res = await (window as any).api.setSetting('log_level', next)
                     if (res.success) {
-                      setSettings((prev) => ({ ...prev, log_level: v as string }))
+                      setSettings((prev) => ({ ...prev, log_level: next }))
                       MessagePlugin.success('日志级别已更新')
                     } else {
                       MessagePlugin.error(res.message || '更新失败')
@@ -611,7 +516,13 @@ export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission
         onConfirm={() => setRecoveryDialogVisible(false)}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ wordBreak: 'break-all', fontFamily: 'monospace' }}>
+          <div
+            style={{
+              wordBreak: 'break-all',
+              fontFamily:
+                'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", monospace'
+            }}
+          >
             {recoveryDialogString}
           </div>
           <Space>
@@ -648,7 +559,8 @@ export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission
             maxHeight: '400px',
             overflowY: 'auto',
             fontSize: '12px',
-            fontFamily: 'monospace',
+            fontFamily:
+              'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", monospace',
             whiteSpace: 'pre-wrap',
             backgroundColor: '#1e1e1e',
             color: '#d4d4d4',
@@ -656,6 +568,39 @@ export const Settings: React.FC<{ permission: PermissionLevel }> = ({ permission
           }}
         >
           {logsText || '暂无日志'}
+        </div>
+      </Dialog>
+
+      <Dialog
+        header="确认结算并重新开始？"
+        visible={settleDialogVisible}
+        confirmBtn="结算"
+        confirmLoading={settleLoading}
+        onClose={() => {
+          if (!settleLoading) setSettleDialogVisible(false)
+        }}
+        onCancel={() => {
+          if (!settleLoading) setSettleDialogVisible(false)
+        }}
+        onConfirm={async () => {
+          if (!(window as any).api) return
+          setSettleLoading(true)
+          const res = await (window as any).api.createSettlement()
+          setSettleLoading(false)
+          if (res.success && res.data) {
+            MessagePlugin.success('结算成功，已重新开始积分')
+            emitDataUpdated('all')
+            setSettleDialogVisible(false)
+          } else {
+            MessagePlugin.error(res.message || '结算失败')
+          }
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div>将把当前未结算的积分记录归档为一个阶段，并将所有学生当前积分清零。</div>
+          <div style={{ color: 'var(--ss-text-secondary)', fontSize: '12px' }}>
+            学生名单不变；结算后的历史在“结算历史”页面查看。
+          </div>
         </div>
       </Dialog>
 

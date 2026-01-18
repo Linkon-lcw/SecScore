@@ -1,6 +1,7 @@
 import { Layout, Menu, Space, Dialog, Input, Button, Tag, MessagePlugin } from 'tdesign-react'
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { UserIcon, SettingIcon, HistoryIcon, RootListIcon, ViewListIcon } from 'tdesign-icons-react'
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { StudentManager } from './components/StudentManager'
 import { Settings } from './components/Settings'
 import { ReasonManager } from './components/ReasonManager'
@@ -13,7 +14,9 @@ import { ThemeProvider } from './contexts/ThemeContext'
 const { Header, Content, Aside } = Layout
 
 function MainContent(): React.JSX.Element {
-  const [activeMenu, setActiveMenu] = useState('score')
+  const navigate = useNavigate()
+  const location = useLocation()
+
   const [wizardVisible, setWizardVisible] = useState(false)
   const [permission, setPermission] = useState<'admin' | 'points' | 'view'>('view')
   const [hasAnyPassword, setHasAnyPassword] = useState(false)
@@ -21,11 +24,22 @@ function MainContent(): React.JSX.Element {
   const [authPassword, setAuthPassword] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
 
+  const activeMenu = useMemo(() => {
+    const p = location.pathname
+    if (p.startsWith('/students')) return 'students'
+    if (p.startsWith('/score')) return 'score'
+    if (p.startsWith('/leaderboard')) return 'leaderboard'
+    if (p.startsWith('/settlements')) return 'settlements'
+    if (p.startsWith('/reasons')) return 'reasons'
+    if (p.startsWith('/settings')) return 'settings'
+    return 'score'
+  }, [location.pathname])
+
   useEffect(() => {
     const checkWizard = async () => {
       if (!(window as any).api) return
-      const res = await (window as any).api.getSettings()
-      if (res.success && res.data && res.data.is_wizard_completed !== '1') {
+      const res = await (window as any).api.getAllSettings()
+      if (res.success && res.data && !res.data.is_wizard_completed) {
         setWizardVisible(true)
       }
     }
@@ -71,23 +85,14 @@ function MainContent(): React.JSX.Element {
     }
   }
 
-  const renderContent = () => {
-    switch (activeMenu) {
-      case 'students':
-        return <StudentManager canEdit={permission === 'admin'} />
-      case 'score':
-        return <ScoreManager canEdit={permission === 'admin' || permission === 'points'} />
-      case 'leaderboard':
-        return <Leaderboard />
-      case 'settlements':
-        return <SettlementHistory />
-      case 'reasons':
-        return <ReasonManager canEdit={permission === 'admin'} />
-      case 'settings':
-        return <Settings permission={permission} />
-      default:
-        return <ScoreManager canEdit={permission === 'admin' || permission === 'points'} />
-    }
+  const onMenuChange = (v: string | number) => {
+    const key = String(v)
+    if (key === 'students') navigate('/students')
+    if (key === 'score') navigate('/score')
+    if (key === 'leaderboard') navigate('/leaderboard')
+    if (key === 'settlements') navigate('/settlements')
+    if (key === 'reasons') navigate('/reasons')
+    if (key === 'settings') navigate('/settings')
   }
 
   const permissionTag = (
@@ -109,7 +114,9 @@ function MainContent(): React.JSX.Element {
         }}
       >
         <div style={{ padding: '24px', textAlign: 'center' }}>
-          <h2 style={{ color: 'var(--ss-sidebar-text, var(--ss-text-main))', margin: 0 }}>SecScore</h2>
+          <h2 style={{ color: 'var(--ss-sidebar-text, var(--ss-text-main))', margin: 0 }}>
+            SecScore
+          </h2>
           <div
             style={{
               fontSize: '12px',
@@ -119,11 +126,7 @@ function MainContent(): React.JSX.Element {
             教育积分管理
           </div>
         </div>
-        <Menu
-          value={activeMenu}
-          onChange={(v) => setActiveMenu(v as string)}
-          style={{ width: '100%', border: 'none' }}
-        >
+        <Menu value={activeMenu} onChange={onMenuChange} style={{ width: '100%', border: 'none' }}>
           <Menu.MenuItem value="students" icon={<UserIcon />} disabled={permission !== 'admin'}>
             学生管理
           </Menu.MenuItem>
@@ -169,7 +172,21 @@ function MainContent(): React.JSX.Element {
             )}
           </Space>
         </Header>
-        <Content style={{ overflowY: 'auto' }}>{renderContent()}</Content>
+        <Content style={{ overflowY: 'auto' }}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/score" replace />} />
+            <Route path="/students" element={<StudentManager canEdit={permission === 'admin'} />} />
+            <Route
+              path="/score"
+              element={<ScoreManager canEdit={permission === 'admin' || permission === 'points'} />}
+            />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/settlements" element={<SettlementHistory />} />
+            <Route path="/reasons" element={<ReasonManager canEdit={permission === 'admin'} />} />
+            <Route path="/settings" element={<Settings permission={permission} />} />
+            <Route path="*" element={<Navigate to="/score" replace />} />
+          </Routes>
+        </Content>
       </Layout>
       <Wizard visible={wizardVisible} onComplete={() => setWizardVisible(false)} />
 
@@ -199,7 +216,9 @@ function MainContent(): React.JSX.Element {
 function App(): React.JSX.Element {
   return (
     <ThemeProvider>
-      <MainContent />
+      <HashRouter>
+        <MainContent />
+      </HashRouter>
     </ThemeProvider>
   )
 }

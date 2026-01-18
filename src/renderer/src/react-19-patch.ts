@@ -35,5 +35,3 @@ if (!(ReactDOM as any).unmountComponentAtNode) {
   ((element: ReactNode, container: HTMLElement) => {
     ;(ReactDOM as any).render(element, container)
   })
-
-console.log('[SecScore] React 19 compatibility patch applied.')

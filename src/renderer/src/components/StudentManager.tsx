@@ -2,14 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Table, Button, Space, MessagePlugin, Dialog, Form, Input } from 'tdesign-react'
 import type { PrimaryTableCol } from 'tdesign-react'
 
-interface Student {
+interface student {
   id: number
   name: string
   score: number
 }
 
 export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
-  const [data, setData] = useState<Student[]>([])
+  const [data, setData] = useState<student[]>([])
   const [loading, setLoading] = useState(false)
   const [visible, setVisible] = useState(false)
   const [form] = Form.useForm()
@@ -73,7 +73,17 @@ export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
         MessagePlugin.error(res.message || '添加失败')
       }
     } catch (err) {
-      console.error('Validate error', err)
+      try {
+        const api = (window as any).api
+        api?.writeLog?.({
+          level: 'error',
+          message: 'renderer:validate error',
+          meta:
+            err instanceof Error ? { message: err.message, stack: err.stack } : { err: String(err) }
+        })
+      } catch {
+        return
+      }
     }
   }
 
@@ -93,7 +103,7 @@ export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
     }
   }
 
-  const columns: PrimaryTableCol<Student>[] = [
+  const columns: PrimaryTableCol<student>[] = [
     { colKey: 'name', title: '姓名', width: 200 },
     {
       colKey: 'score',

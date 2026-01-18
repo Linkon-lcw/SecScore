@@ -1,10 +1,13 @@
-export interface IpcResponse<T = any> {
+export interface ipcResponse<T = any> {
   success: boolean
   data?: T
   message?: string
 }
 
-export interface ThemeConfig {
+export type logLevel = 'info' | 'warn' | 'error' | 'debug'
+export type permissionLevel = 'admin' | 'points' | 'view'
+
+export interface themeConfig {
   name: string
   id: string
   mode: 'light' | 'dark'
@@ -14,90 +17,113 @@ export interface ThemeConfig {
   }
 }
 
-export interface ElectronApi {
+export type settingsSpec = {
+  is_wizard_completed: boolean
+  log_level: logLevel
+}
+
+export type settingsKey = keyof settingsSpec
+
+export type settingChange<K extends settingsKey = settingsKey> = {
+  key: K
+  value: settingsSpec[K]
+}
+
+export interface electronApi {
   // Theme
-  getThemes: () => Promise<IpcResponse<ThemeConfig[]>>
-  getCurrentTheme: () => Promise<IpcResponse<ThemeConfig>>
-  setTheme: (themeId: string) => Promise<IpcResponse<void>>
-  onThemeChanged: (callback: (theme: ThemeConfig) => void) => () => void
+  getThemes: () => Promise<ipcResponse<themeConfig[]>>
+  getCurrentTheme: () => Promise<ipcResponse<themeConfig>>
+  setTheme: (themeId: string) => Promise<ipcResponse<void>>
+  onThemeChanged: (callback: (theme: themeConfig) => void) => () => void
 
   // DB - Student
-  queryStudents: (params?: any) => Promise<IpcResponse<any[]>>
-  createStudent: (data: { name: string }) => Promise<IpcResponse<number>>
-  updateStudent: (id: number, data: any) => Promise<IpcResponse<void>>
-  deleteStudent: (id: number) => Promise<IpcResponse<void>>
+  queryStudents: (params?: any) => Promise<ipcResponse<any[]>>
+  createStudent: (data: { name: string }) => Promise<ipcResponse<number>>
+  updateStudent: (id: number, data: any) => Promise<ipcResponse<void>>
+  deleteStudent: (id: number) => Promise<ipcResponse<void>>
 
   // DB - Reason
-  queryReasons: () => Promise<IpcResponse<any[]>>
-  createReason: (data: any) => Promise<IpcResponse<number>>
-  updateReason: (id: number, data: any) => Promise<IpcResponse<void>>
-  deleteReason: (id: number) => Promise<IpcResponse<void>>
+  queryReasons: () => Promise<ipcResponse<any[]>>
+  createReason: (data: any) => Promise<ipcResponse<number>>
+  updateReason: (id: number, data: any) => Promise<ipcResponse<void>>
+  deleteReason: (id: number) => Promise<ipcResponse<void>>
 
   // DB - Event
-  queryEvents: (params?: any) => Promise<IpcResponse<any[]>>
+  queryEvents: (params?: any) => Promise<ipcResponse<any[]>>
   createEvent: (data: {
     student_name: string
     reason_content: string
     delta: number
-  }) => Promise<IpcResponse<number>>
-  deleteEvent: (uuid: string) => Promise<IpcResponse<void>>
+  }) => Promise<ipcResponse<number>>
+  deleteEvent: (uuid: string) => Promise<ipcResponse<void>>
   queryEventsByStudent: (params: {
     student_name: string
     limit?: number
     startTime?: string | null
-  }) => Promise<IpcResponse<any[]>>
+  }) => Promise<ipcResponse<any[]>>
   queryLeaderboard: (params: {
     range: 'today' | 'week' | 'month'
-  }) => Promise<IpcResponse<{ startTime: string; rows: any[] }>>
+  }) => Promise<ipcResponse<{ startTime: string; rows: any[] }>>
 
   // Settlement
-  querySettlements: () =>
-    Promise<IpcResponse<{ id: number; start_time: string; end_time: string; event_count: number }[]>>
-  createSettlement: () =>
-    Promise<IpcResponse<{ settlementId: number; startTime: string; endTime: string; eventCount: number }>>
+  querySettlements: () => Promise<
+    ipcResponse<{ id: number; start_time: string; end_time: string; event_count: number }[]>
+  >
+  createSettlement: () => Promise<
+    ipcResponse<{ settlementId: number; startTime: string; endTime: string; eventCount: number }>
+  >
   querySettlementLeaderboard: (params: { settlement_id: number }) => Promise<
-    IpcResponse<{
+    ipcResponse<{
       settlement: { id: number; start_time: string; end_time: string }
       rows: { name: string; score: number }[]
     }>
   >
 
-  // Settings & Sync
-  getSettings: () => Promise<IpcResponse<Record<string, string>>>
-  updateSetting: (key: string, value: string) => Promise<IpcResponse<void>>
-  getSyncStatus: () => Promise<IpcResponse<{ connected: boolean; lastSync?: string }>>
-  triggerSync: () => Promise<IpcResponse<void>>
+  // Settings
+  getAllSettings: () => Promise<ipcResponse<settingsSpec>>
+  getSetting: <K extends settingsKey>(key: K) => Promise<ipcResponse<settingsSpec[K]>>
+  setSetting: <K extends settingsKey>(key: K, value: settingsSpec[K]) => Promise<ipcResponse<void>>
+  onSettingChanged: (callback: (change: settingChange) => void) => () => void
 
   // Auth & Security
   authGetStatus: () => Promise<
-    IpcResponse<{
-      permission: 'admin' | 'points' | 'view'
+    ipcResponse<{
+      permission: permissionLevel
       hasAdminPassword: boolean
       hasPointsPassword: boolean
       hasRecoveryString: boolean
     }>
   >
-  authLogin: (password: string) => Promise<IpcResponse<{ permission: 'admin' | 'points' | 'view' }>>
-  authLogout: () => Promise<IpcResponse<{ permission: 'admin' | 'points' | 'view' }>>
+  authLogin: (password: string) => Promise<ipcResponse<{ permission: permissionLevel }>>
+  authLogout: () => Promise<ipcResponse<{ permission: permissionLevel }>>
   authSetPasswords: (payload: {
     adminPassword?: string | null
     pointsPassword?: string | null
-  }) => Promise<IpcResponse<{ recoveryString?: string }>>
-  authGenerateRecovery: () => Promise<IpcResponse<{ recoveryString: string }>>
-  authResetByRecovery: (recoveryString: string) => Promise<IpcResponse<{ recoveryString: string }>>
-  authClearAll: () => Promise<IpcResponse<void>>
+  }) => Promise<ipcResponse<{ recoveryString?: string }>>
+  authGenerateRecovery: () => Promise<ipcResponse<{ recoveryString: string }>>
+  authResetByRecovery: (recoveryString: string) => Promise<ipcResponse<{ recoveryString: string }>>
+  authClearAll: () => Promise<ipcResponse<void>>
 
   // Data import/export
-  exportDataJson: () => Promise<IpcResponse<string>>
-  importDataJson: (jsonText: string) => Promise<IpcResponse<void>>
+  exportDataJson: () => Promise<ipcResponse<string>>
+  importDataJson: (jsonText: string) => Promise<ipcResponse<void>>
+
+  // Window
+  openWindow: (input: {
+    key: string
+    title?: string
+    route?: string
+    options?: any
+  }) => Promise<ipcResponse<void>>
+  navigateWindow: (input: { key?: string; route: string }) => Promise<ipcResponse<void>>
 
   // Logger
-  queryLogs: (lines?: number) => Promise<IpcResponse<string[]>>
-  clearLogs: () => Promise<IpcResponse<void>>
-  setLogLevel: (level: 'debug' | 'info' | 'warn' | 'error') => Promise<IpcResponse<void>>
+  queryLogs: (lines?: number) => Promise<ipcResponse<string[]>>
+  clearLogs: () => Promise<ipcResponse<void>>
+  setLogLevel: (level: logLevel) => Promise<ipcResponse<void>>
   writeLog: (payload: {
-    level: 'debug' | 'info' | 'warn' | 'error'
+    level: logLevel
     message: string
     meta?: any
-  }) => Promise<IpcResponse<void>>
+  }) => Promise<ipcResponse<void>>
 }

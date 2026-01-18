@@ -8,11 +8,12 @@ import {
   Space,
   Card,
   MessagePlugin,
-  DialogPlugin
+  Dialog
 } from 'tdesign-react'
 import { ViewListIcon, DownloadIcon } from 'tdesign-icons-react'
+import * as XLSX from 'xlsx'
 
-interface StudentRank {
+interface studentRank {
   id: number
   name: string
   score: number
@@ -20,10 +21,13 @@ interface StudentRank {
 }
 
 export const Leaderboard: React.FC = () => {
-  const [data, setData] = useState<StudentRank[]>([])
+  const [data, setData] = useState<studentRank[]>([])
   const [loading, setLoading] = useState(false)
   const [timeRange, setTimeRange] = useState('today')
   const [startTime, setStartTime] = useState<string | null>(null)
+  const [historyVisible, setHistoryVisible] = useState(false)
+  const [historyHeader, setHistoryHeader] = useState('')
+  const [historyText, setHistoryText] = useState('')
 
   const fetchRankings = useCallback(async () => {
     if (!(window as any).api) return
@@ -67,76 +71,57 @@ export const Leaderboard: React.FC = () => {
       return `${time}  ${delta}  ${e.reason_content}`
     })
 
-    DialogPlugin.confirm({
-      header: `${studentName} - 操作记录`,
-      body: (
-        <div
-          style={{
-            maxHeight: '420px',
-            overflowY: 'auto',
-            fontSize: '12px',
-            fontFamily: 'monospace',
-            whiteSpace: 'pre-wrap',
-            backgroundColor: '#1e1e1e',
-            color: '#d4d4d4',
-            padding: '10px'
-          }}
-        >
-          {lines.join('\n') || '暂无记录'}
-        </div>
-      ),
-      width: '80%',
-      cancelBtn: null,
-      confirmBtn: '关闭'
-    })
+    setHistoryHeader(`${studentName} - 操作记录`)
+    setHistoryText(lines.join('\n') || '暂无记录')
+    setHistoryVisible(true)
   }
 
   const handleExport = () => {
-    // 简单的 CSV 导出实现
-    const headers = ['排名', '姓名', '总积分', '变化']
-    const rows = data.map((item, index) => [
-      index + 1,
-      item.name,
-      item.score,
-      item.range_change > 0 ? `+${item.range_change}` : item.range_change
-    ])
-
-    const csvContent = [headers, ...rows].map((e) => e.join(',')).join('\n')
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `排行榜_${timeRange}_${new Date().toLocaleDateString()}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    MessagePlugin.success('导出成功')
-  }
-
-  const handleExportExcel = () => {
     const title = timeRange === 'today' ? '今天' : timeRange === 'week' ? '本周' : '本月'
-    const rowsHtml = data
-      .map((item, index) => {
-        const change = item.range_change > 0 ? `+${item.range_change}` : item.range_change
-        return `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.score}</td><td>${change}</td></tr>`
-      })
-      .join('')
 
-    const html = `\ufeff<html><head><meta charset="UTF-8" /></head><body><table border="1"><tr><th>排名</th><th>姓名</th><th>总积分</th><th>${title}变化</th></tr>${rowsHtml}</table></body></html>`
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const sanitizeCell = (v: unknown) => {
+      if (typeof v !== 'string') return v
+      if (/^[=+\-@]/.test(v)) return `'${v}`
+      return v
+    }
+
+    const sheetData = [
+      ['排名', '姓名', '总积分', `${title}变化`],
+      ...data.map((item, index) => [
+        index + 1,
+        sanitizeCell(item.name),
+        item.score,
+        item.range_change
+      ])
+    ]
+
+    const ws = XLSX.utils.aoa_to_sheet(sheetData)
+    ws['!cols'] = [{ wch: 6 }, { wch: 14 }, { wch: 10 }, { wch: 10 }]
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, '排行榜')
+
+    const xlsxBytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+    const blob = new Blob([xlsxBytes], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', `排行榜_${timeRange}_${new Date().toLocaleDateString()}.xls`)
+    link.setAttribute(
+      'download',
+      `排行榜_${timeRange}_${new Date().toISOString().slice(0, 10)}.xlsx`
+    )
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(url)
     MessagePlugin.success('导出成功')
   }
 
-  const columns: PrimaryTableCol<StudentRank>[] = [
+  const columns: PrimaryTableCol<studentRank>[] = [
     {
       colKey: 'rank',
       title: '排名',
@@ -155,17 +140,19 @@ export const Leaderboard: React.FC = () => {
         )
       }
     },
-    { colKey: 'name', title: '姓名', width: 120 },
+    { colKey: 'name', title: '姓名', width: 120, align: 'center' },
     {
       colKey: 'score',
       title: '总积分',
       width: 100,
+      align: 'center',
       cell: ({ row }) => <span style={{ fontWeight: 'bold' }}>{row.score}</span>
     },
     {
       colKey: 'range_change',
       title: timeRange === 'today' ? '今日变化' : timeRange === 'week' ? '本周变化' : '本月变化',
       width: 100,
+      align: 'center',
       cell: ({ row }) => (
         <Tag
           theme={row.range_change > 0 ? 'success' : row.range_change < 0 ? 'danger' : 'default'}
@@ -179,6 +166,7 @@ export const Leaderboard: React.FC = () => {
       colKey: 'operation',
       title: '操作记录',
       width: 100,
+      align: 'center',
       cell: ({ row }) => (
         <Button
           variant="text"
@@ -214,10 +202,7 @@ export const Leaderboard: React.FC = () => {
             <Select.Option value="month" label="本月" />
           </Select>
           <Button variant="outline" icon={<DownloadIcon />} onClick={handleExport}>
-            导出 CSV
-          </Button>
-          <Button variant="outline" icon={<DownloadIcon />} onClick={handleExportExcel}>
-            导出 Excel
+            导出 XLSX
           </Button>
         </Space>
       </div>
@@ -230,9 +215,36 @@ export const Leaderboard: React.FC = () => {
           loading={loading}
           bordered
           hover
+          className="ss-table-center"
           style={{ color: 'var(--ss-text-main)' }}
         />
       </Card>
+
+      <Dialog
+        header={historyHeader}
+        visible={historyVisible}
+        width="80%"
+        cancelBtn={null}
+        confirmBtn="关闭"
+        onClose={() => setHistoryVisible(false)}
+        onConfirm={() => setHistoryVisible(false)}
+      >
+        <div
+          style={{
+            maxHeight: '420px',
+            overflowY: 'auto',
+            fontSize: '12px',
+            fontFamily:
+              'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", monospace',
+            whiteSpace: 'pre-wrap',
+            backgroundColor: '#1e1e1e',
+            color: '#d4d4d4',
+            padding: '10px'
+          }}
+        >
+          {historyText}
+        </div>
+      </Dialog>
     </div>
   )
 }

@@ -2,27 +2,29 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Card, MessagePlugin, Space, Table } from 'tdesign-react'
 import type { PrimaryTableCol } from 'tdesign-react'
 
-interface SettlementSummary {
+interface settlementSummary {
   id: number
   start_time: string
   end_time: string
   event_count: number
 }
 
-interface SettlementLeaderboardRow {
+interface settlementLeaderboardRow {
   name: string
   score: number
 }
 
 export const SettlementHistory: React.FC = () => {
-  const [settlements, setSettlements] = useState<SettlementSummary[]>([])
+  const [settlements, setSettlements] = useState<settlementSummary[]>([])
   const [loading, setLoading] = useState(false)
 
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [selectedSettlement, setSelectedSettlement] = useState<
-    { id: number; start_time: string; end_time: string } | null
-  >(null)
-  const [rows, setRows] = useState<SettlementLeaderboardRow[]>([])
+  const [selectedSettlement, setSelectedSettlement] = useState<{
+    id: number
+    start_time: string
+    end_time: string
+  } | null>(null)
+  const [rows, setRows] = useState<settlementLeaderboardRow[]>([])
   const [detailLoading, setDetailLoading] = useState(false)
 
   const formatRange = (s: { start_time: string; end_time: string }) => {
@@ -70,7 +72,7 @@ export const SettlementHistory: React.FC = () => {
     setRows(res.data.rows || [])
   }
 
-  const columns: PrimaryTableCol<SettlementLeaderboardRow>[] = useMemo(
+  const columns: PrimaryTableCol<settlementLeaderboardRow>[] = useMemo(
     () => [
       {
         colKey: 'rank',
@@ -128,11 +130,22 @@ export const SettlementHistory: React.FC = () => {
   return (
     <div style={{ padding: '24px' }}>
       <h2 style={{ marginBottom: '16px', color: 'var(--ss-text-main)' }}>结算历史</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+          gap: '16px'
+        }}
+      >
         {settlements.map((s) => (
-          <Card key={s.id} style={{ backgroundColor: 'var(--ss-card-bg)', color: 'var(--ss-text-main)' }}>
+          <Card
+            key={s.id}
+            style={{ backgroundColor: 'var(--ss-card-bg)', color: 'var(--ss-text-main)' }}
+          >
             <div style={{ fontWeight: 700, marginBottom: '8px' }}>阶段 #{s.id}</div>
-            <div style={{ fontSize: '12px', color: 'var(--ss-text-secondary)', marginBottom: '12px' }}>
+            <div
+              style={{ fontSize: '12px', color: 'var(--ss-text-secondary)', marginBottom: '12px' }}
+            >
               {formatRange(s)}
             </div>
             <Space>
@@ -152,4 +165,3 @@ export const SettlementHistory: React.FC = () => {
     </div>
   )
 }
-

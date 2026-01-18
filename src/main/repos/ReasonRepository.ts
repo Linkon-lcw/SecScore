@@ -1,47 +1,94 @@
-import { Database } from 'better-sqlite3'
+import { Service } from '../../shared/kernel'
+import { MainContext } from '../context'
+import { ReasonEntity } from '../db/entities'
 
-export interface Reason {
+export interface reason {
   id: number
   content: string
   category: string
   delta: number
   is_system: number
-  sync_state: number
 }
 
-export class ReasonRepository {
-  constructor(private db: Database) {}
+declare module '../../shared/kernel' {
+  interface Context {
+    reasons: ReasonRepository
+  }
+}
 
-  findAll() {
-    return this.db
-      .prepare('SELECT * FROM reasons ORDER BY category ASC, content ASC')
-      .all() as Reason[]
+export class ReasonRepository extends Service {
+  constructor(ctx: MainContext) {
+    super(ctx, 'reasons')
+    this.registerIpc()
   }
 
-  create(reason: Omit<Reason, 'id' | 'sync_state' | 'is_system'>) {
-    const info = this.db
-      .prepare('INSERT INTO reasons (content, category, delta, is_system) VALUES (?, ?, ?, 0)')
-      .run(reason.content, reason.category, reason.delta)
-    return info.lastInsertRowid as number
+  private get mainCtx() {
+    return this.ctx as MainContext
   }
 
-  update(id: number, reason: Partial<Reason>) {
-    const sets: string[] = []
-    const vals: any[] = []
-    Object.entries(reason).forEach(([key, val]) => {
-      if (key !== 'id') {
-        sets.push(`${key} = ?`)
-        vals.push(val)
-      }
+  private registerIpc() {
+    this.mainCtx.handle('db:reason:query', async () => ({
+      success: true,
+      data: await this.findAll()
+    }))
+    this.mainCtx.handle('db:reason:create', async (event, data) => {
+      if (!this.mainCtx.permissions.requirePermission(event, 'admin'))
+        return { success: false, message: 'Permission denied' }
+      return { success: true, data: await this.create(data) }
     })
-    vals.push(id)
-    this.db
-      .prepare(`UPDATE reasons SET ${sets.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
-      .run(...vals)
+    this.mainCtx.handle('db:reason:update', async (event, id, data) => {
+      if (!this.mainCtx.permissions.requirePermission(event, 'admin'))
+        return { success: false, message: 'Permission denied' }
+      await this.update(id, data)
+      return { success: true }
+    })
+    this.mainCtx.handle('db:reason:delete', async (event, id) => {
+      if (!this.mainCtx.permissions.requirePermission(event, 'admin'))
+        return { success: false, message: 'Permission denied' }
+      const changes = await this.delete(id)
+      if (!changes) return { success: false, message: '记录不存在' }
+      return { success: true, data: { changes } }
+    })
+    // 兼容前端 deleteReason 命名错误
+    this.mainCtx.handle('db:deleteReason', async (event, id) => {
+      if (!this.mainCtx.permissions.requirePermission(event, 'admin'))
+        return { success: false, message: 'Permission denied' }
+      const changes = await this.delete(id)
+      if (!changes) return { success: false, message: '记录不存在' }
+      return { success: true, data: { changes } }
+    })
   }
 
-  delete(id: number) {
-    const info = this.db.prepare('DELETE FROM reasons WHERE id = ?').run(id)
-    return info.changes
+  async findAll(): Promise<reason[]> {
+    const repo = this.ctx.db.dataSource.getRepository(ReasonEntity)
+    return (await repo.find({ order: { category: 'ASC', content: 'ASC' } })) as any
+  }
+
+  async create(reason: Omit<reason, 'id' | 'is_system'>): Promise<number> {
+    const repo = this.ctx.db.dataSource.getRepository(ReasonEntity)
+    const created = repo.create({
+      content: String(reason?.content ?? '').trim(),
+      category: String(reason?.category ?? '其他'),
+      delta: Number(reason?.delta ?? 0),
+      is_system: 0,
+      updated_at: new Date().toISOString()
+    })
+    const saved = await repo.save(created)
+    return saved.id
+  }
+
+  async update(id: number, reason: Partial<reason>): Promise<void> {
+    const next: any = {}
+    for (const [key, val] of Object.entries(reason)) {
+      if (key === 'id') continue
+      next[key] = val
+    }
+    next.updated_at = new Date().toISOString()
+    await this.ctx.db.dataSource.getRepository(ReasonEntity).update(id, next)
+  }
+
+  async delete(id: number): Promise<number> {
+    const result = await this.ctx.db.dataSource.getRepository(ReasonEntity).delete(id)
+    return Number(result.affected ?? 0)
   }
 }

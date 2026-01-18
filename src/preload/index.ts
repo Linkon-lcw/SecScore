@@ -1,14 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { ThemeConfig } from './types'
+import { settingChange, settingsKey, settingsSpec, themeConfig } from './types'
 
 const api = {
   // Theme
   getThemes: () => ipcRenderer.invoke('theme:list'),
   getCurrentTheme: () => ipcRenderer.invoke('theme:current'),
   setTheme: (themeId: string) => ipcRenderer.invoke('theme:set', themeId),
-  onThemeChanged: (callback: (theme: ThemeConfig) => void) => {
-    const subscription = (_event: any, theme: ThemeConfig) => callback(theme)
+  onThemeChanged: (callback: (theme: themeConfig) => void) => {
+    const subscription = (_event: any, theme: themeConfig) => callback(theme)
     ipcRenderer.on('theme:updated', subscription)
     return () => ipcRenderer.removeListener('theme:updated', subscription)
   },
@@ -39,10 +39,15 @@ const api = {
     ipcRenderer.invoke('db:settlement:leaderboard', params),
 
   // Settings & Sync
-  getSettings: () => ipcRenderer.invoke('db:getSettings'),
-  updateSetting: (key: string, value: string) => ipcRenderer.invoke('db:updateSetting', key, value),
-  getSyncStatus: () => ipcRenderer.invoke('ws:getStatus'),
-  triggerSync: () => ipcRenderer.invoke('ws:triggerSync'),
+  getAllSettings: () => ipcRenderer.invoke('settings:getAll'),
+  getSetting: <K extends settingsKey>(key: K) => ipcRenderer.invoke('settings:get', key),
+  setSetting: <K extends settingsKey>(key: K, value: settingsSpec[K]) =>
+    ipcRenderer.invoke('settings:set', key, value),
+  onSettingChanged: (callback: (change: settingChange) => void) => {
+    const subscription = (_event: any, change: settingChange) => callback(change)
+    ipcRenderer.on('settings:changed', subscription)
+    return () => ipcRenderer.removeListener('settings:changed', subscription)
+  },
 
   // Auth & Security
   authGetStatus: () => ipcRenderer.invoke('auth:getStatus'),
@@ -59,6 +64,12 @@ const api = {
   exportDataJson: () => ipcRenderer.invoke('data:exportJson'),
   importDataJson: (jsonText: string) => ipcRenderer.invoke('data:importJson', jsonText),
 
+  // Window
+  openWindow: (input: { key: string; title?: string; route?: string; options?: any }) =>
+    ipcRenderer.invoke('window:open', input),
+  navigateWindow: (input: { key?: string; route: string }) =>
+    ipcRenderer.invoke('window:navigate', input),
+
   // Logger
   queryLogs: (lines?: number) => ipcRenderer.invoke('log:query', lines),
   clearLogs: () => ipcRenderer.invoke('log:clear'),
@@ -72,7 +83,18 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
-    console.error(error)
+    try {
+      ipcRenderer.invoke('log:write', {
+        level: 'error',
+        message: 'preload:expose failed',
+        meta:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : { error: String(error) }
+      })
+    } catch {
+      void 0
+    }
   }
 } else {
   // @ts-ignore (define in dts)

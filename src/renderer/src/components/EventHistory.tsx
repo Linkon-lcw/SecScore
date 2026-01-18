@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Table, PrimaryTableCol, Tag } from 'tdesign-react'
 
-interface ScoreEvent {
+interface scoreEvent {
   id: number
   uuid: string
   student_name: string
@@ -13,7 +13,7 @@ interface ScoreEvent {
 }
 
 export const EventHistory: React.FC = () => {
-  const [data, setData] = useState<ScoreEvent[]>([])
+  const [data, setData] = useState<scoreEvent[]>([])
   const [loading, setLoading] = useState(false)
 
   const fetchEvents = async () => {
@@ -30,7 +30,7 @@ export const EventHistory: React.FC = () => {
     fetchEvents()
   }, [])
 
-  const columns: PrimaryTableCol<ScoreEvent>[] = [
+  const columns: PrimaryTableCol<scoreEvent>[] = [
     { colKey: 'student_name', title: '学生姓名', width: 120 },
     { colKey: 'reason_content', title: '积分理由', width: 200 },
     {

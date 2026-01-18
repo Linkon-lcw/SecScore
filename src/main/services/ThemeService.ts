@@ -1,9 +1,11 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { Service } from '../../shared/kernel'
+import { MainContext } from '../context'
+import { BrowserWindow } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { FSWatcher, watch } from 'chokidar'
 
-export interface ThemeConfig {
+export interface themeConfig {
   name: string
   id: string
   mode: 'light' | 'dark'
@@ -13,20 +15,34 @@ export interface ThemeConfig {
   }
 }
 
-export class ThemeService {
+declare module '../../shared/kernel' {
+  interface Context {
+    themes: ThemeService
+  }
+}
+
+export class ThemeService extends Service {
   private themeDir: string
   private watcher: FSWatcher | null = null
   private currentThemeId: string = 'light-default'
-  private canSetTheme: ((senderId: number) => boolean) | null = null
 
-  constructor(themeDir: string, canSetTheme?: (senderId: number) => boolean) {
+  constructor(ctx: MainContext, themeDir: string) {
+    super(ctx, 'themes')
     this.themeDir = themeDir
-    this.canSetTheme = canSetTheme || null
+    this.setupWatcher()
+    this.registerIpc()
+
+    ctx.effect(() => {
+      if (this.watcher) this.watcher.close()
+    })
+  }
+
+  private get mainCtx() {
+    return this.ctx as MainContext
   }
 
   public init() {
-    this.setupWatcher()
-    this.registerIpc()
+    // Already inited in constructor
   }
 
   private setupWatcher() {
@@ -39,26 +55,27 @@ export class ThemeService {
 
     this.watcher.on('change', (filePath) => {
       if (filePath.endsWith('.json')) {
-        console.log(`Theme file changed: ${filePath}`)
+        this.mainCtx.logger.info('Theme file changed', { filePath })
         this.notifyThemeUpdate()
       }
     })
   }
 
   private registerIpc() {
-    ipcMain.handle('theme:list', async () => {
+    this.mainCtx.handle('theme:list', async () => {
       return { success: true, data: this.getThemeList() }
     })
 
-    ipcMain.handle('theme:current', async () => {
+    this.mainCtx.handle('theme:current', async () => {
       const theme = this.getThemeById(this.currentThemeId)
       return { success: true, data: theme }
     })
 
-    ipcMain.handle('theme:set', async (event, themeId: string) => {
+    this.mainCtx.handle('theme:set', async (event, themeId: string) => {
       const senderId = event?.sender?.id
-      if (this.canSetTheme && typeof senderId === 'number') {
-        if (!this.canSetTheme(senderId)) return { success: false, message: 'Permission denied' }
+      if (typeof senderId === 'number') {
+        if (!this.mainCtx.permissions.requirePermission(event, 'admin'))
+          return { success: false, message: 'Permission denied' }
       }
       this.currentThemeId = themeId
       this.notifyThemeUpdate()
@@ -66,7 +83,7 @@ export class ThemeService {
     })
   }
 
-  private getThemeList(): ThemeConfig[] {
+  private getThemeList(): themeConfig[] {
     try {
       if (!fs.existsSync(this.themeDir)) return []
       const files = fs.readdirSync(this.themeDir)
@@ -75,19 +92,21 @@ export class ThemeService {
         .map((f) => {
           try {
             const content = fs.readFileSync(path.join(this.themeDir, f), 'utf-8')
-            return JSON.parse(content) as ThemeConfig
+            return JSON.parse(content) as themeConfig
           } catch {
             return null
           }
         })
-        .filter((t): t is ThemeConfig => t !== null)
+        .filter((t): t is themeConfig => t !== null)
     } catch (e) {
-      console.error('Failed to read themes:', e)
+      this.mainCtx.logger.error('Failed to read themes', {
+        meta: e instanceof Error ? { message: e.message, stack: e.stack } : { e }
+      })
       return []
     }
   }
 
-  private getThemeById(id: string): ThemeConfig | null {
+  private getThemeById(id: string): themeConfig | null {
     const list = this.getThemeList()
     return list.find((t) => t.id === id) || list[0] || null
   }

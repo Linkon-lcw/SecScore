@@ -17,7 +17,9 @@
       "--ss-border-color": "#332F4D",
       "--ss-header-bg": "#18152C",
       "--ss-sidebar-bg": "#18152C",
-      "--ss-item-hover": "#252046"
+      "--ss-item-hover": "#252046",
+      "--ss-sidebar-active-bg": "#252046",
+      "--ss-sidebar-active-text": "#F5F3FF"
     }
   }
 }

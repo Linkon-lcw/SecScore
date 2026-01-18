@@ -54,20 +54,20 @@ const matchStudentName = (name: string, keyword: string) => {
   return false
 }
 
-interface Student {
+interface student {
   id: number
   name: string
   score: number
 }
 
-interface Reason {
+interface reason {
   id: number
   content: string
   delta: number
   category: string
 }
 
-interface ScoreEvent {
+interface scoreEvent {
   id: number
   uuid: string
   student_name: string
@@ -79,9 +79,9 @@ interface ScoreEvent {
 }
 
 export const ScoreManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
-  const [students, setStudents] = useState<Student[]>([])
-  const [reasons, setReasons] = useState<Reason[]>([])
-  const [events, setEvents] = useState<ScoreEvent[]>([])
+  const [students, setStudents] = useState<student[]>([])
+  const [reasons, setReasons] = useState<reason[]>([])
+  const [events, setEvents] = useState<scoreEvent[]>([])
   const [loading, setLoading] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [form] = Form.useForm()
@@ -190,7 +190,7 @@ export const ScoreManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
     }
   }
 
-  const columns: PrimaryTableCol<ScoreEvent>[] = [
+  const columns: PrimaryTableCol<scoreEvent>[] = [
     { colKey: 'student_name', title: '学生', width: 100 },
     {
       colKey: 'delta',

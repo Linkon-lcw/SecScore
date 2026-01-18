@@ -8,11 +8,10 @@ import {
   Form,
   Input,
   MessagePlugin,
-  Tag,
-  DialogPlugin
+  Tag
 } from 'tdesign-react'
 
-interface Reason {
+interface reason {
   id: number
   content: string
   category: string
@@ -21,9 +20,12 @@ interface Reason {
 }
 
 export const ReasonManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
-  const [data, setData] = useState<Reason[]>([])
+  const [data, setData] = useState<reason[]>([])
   const [loading, setLoading] = useState(false)
   const [visible, setVisible] = useState(false)
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<reason | null>(null)
   const [form] = Form.useForm()
 
   const emitDataUpdated = (category: 'reasons' | 'all') => {
@@ -82,35 +84,17 @@ export const ReasonManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
     }
   }
 
-  const handleDelete = async (row: Reason) => {
+  const handleDelete = async (row: reason) => {
     if (!(window as any).api) return
     if (!canEdit) {
       MessagePlugin.error('当前为只读权限')
       return
     }
-    const dialog = DialogPlugin.confirm({
-      header: '确认删除该理由？',
-      body: (
-        <div style={{ wordBreak: 'break-all' }}>
-          {row.category} / {row.content} ({row.delta > 0 ? `+${row.delta}` : row.delta})
-        </div>
-      ),
-      confirmBtn: '删除',
-      onConfirm: async () => {
-        const res = await (window as any).api.deleteReason(row.id)
-        if (res.success) {
-          MessagePlugin.success('删除成功')
-          fetchReasons()
-          emitDataUpdated('reasons')
-        } else {
-          MessagePlugin.error(res.message || '删除失败')
-        }
-        dialog.hide()
-      }
-    })
+    setDeleteTarget(row)
+    setDeleteDialogVisible(true)
   }
 
-  const columns: PrimaryTableCol<Reason>[] = [
+  const columns: PrimaryTableCol<reason>[] = [
     {
       colKey: 'category',
       title: '分类',
@@ -186,6 +170,49 @@ export const ReasonManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
             <Input type="number" placeholder="例如: 2 或 -2" />
           </Form.FormItem>
         </Form>
+      </Dialog>
+
+      <Dialog
+        header="确认删除该理由？"
+        visible={deleteDialogVisible}
+        confirmBtn="删除"
+        confirmLoading={deleteLoading}
+        onClose={() => {
+          if (!deleteLoading) {
+            setDeleteDialogVisible(false)
+            setDeleteTarget(null)
+          }
+        }}
+        onCancel={() => {
+          if (!deleteLoading) {
+            setDeleteDialogVisible(false)
+            setDeleteTarget(null)
+          }
+        }}
+        onConfirm={async () => {
+          if (!(window as any).api) return
+          if (!deleteTarget) return
+          setDeleteLoading(true)
+          const res = await (window as any).api.deleteReason(deleteTarget.id)
+          setDeleteLoading(false)
+          if (res.success) {
+            MessagePlugin.success('删除成功')
+            setDeleteDialogVisible(false)
+            setDeleteTarget(null)
+            fetchReasons()
+            emitDataUpdated('reasons')
+          } else {
+            MessagePlugin.error(res.message || '删除失败')
+          }
+        }}
+      >
+        <div style={{ wordBreak: 'break-all' }}>
+          {deleteTarget
+            ? `${deleteTarget.category} / ${deleteTarget.content} (${
+                deleteTarget.delta > 0 ? `+${deleteTarget.delta}` : deleteTarget.delta
+              })`
+            : ''}
+        </div>
       </Dialog>
     </div>
   )
