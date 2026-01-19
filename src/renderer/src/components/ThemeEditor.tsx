@@ -135,16 +135,16 @@ export const ThemeEditor: React.FC = () => {
             <Divider align="left">基本信息</Divider>
             <Row gutter={[16, 16]}>
               <Col span={12}>
-                <Form.Item label="主题名称">
+                <Form.FormItem label="主题名称">
                   <Input
                     value={editingTheme.name}
                     onChange={(v) => updateEditingTheme({ name: v })}
                     placeholder="请输入主题名称"
                   />
-                </Form.Item>
+                </Form.FormItem>
               </Col>
               <Col span={12}>
-                <Form.Item label="色彩模式">
+                <Form.FormItem label="色彩模式">
                   <Select
                     value={editingTheme.mode}
                     onChange={(v) => updateEditingTheme({ mode: v as 'light' | 'dark' })}
@@ -153,16 +153,16 @@ export const ThemeEditor: React.FC = () => {
                       { label: '深色 (Dark)', value: 'dark' }
                     ]}
                   />
-                </Form.Item>
+                </Form.FormItem>
               </Col>
               <Col span={24}>
-                <Form.Item label="主题 ID (唯一标识)" help="建议使用英文，如 my-theme">
+                <Form.FormItem label="主题 ID (唯一标识)" help="建议使用英文，如 my-theme">
                   <Input
                     value={editingTheme.id}
                     onChange={(v) => updateEditingTheme({ id: v })}
                     placeholder="请输入主题 ID"
                   />
-                </Form.Item>
+                </Form.FormItem>
               </Col>
             </Row>
           </div>
@@ -170,14 +170,14 @@ export const ThemeEditor: React.FC = () => {
           {/* TDesign 品牌色 */}
           <div>
             <Divider align="left">品牌色 (Brand)</Divider>
-            <Form.Item label="主品牌色" help="将自动生成一系列色阶">
+            <Form.FormItem label="主品牌色" help="将自动生成一系列色阶">
               <ColorPicker
                 value={editingTheme.config.tdesign.brandColor}
                 onChange={(v) => updateConfig('tdesign', 'brandColor', v)}
                 enableAlpha={false}
                 format="HEX"
               />
-            </Form.Item>
+            </Form.FormItem>
           </div>
 
           {/* 业务自定义变量 */}
@@ -216,7 +216,6 @@ export const ThemeEditor: React.FC = () => {
                           onChange={(v) => updateConfig('custom', item.key, v)}
                           enableAlpha
                           format="HEX"
-                          size="small"
                         />
                       </div>
                     </Col>

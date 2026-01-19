@@ -43,6 +43,8 @@ export interface electronApi {
   getThemes: () => Promise<ipcResponse<themeConfig[]>>
   getCurrentTheme: () => Promise<ipcResponse<themeConfig>>
   setTheme: (themeId: string) => Promise<ipcResponse<void>>
+  saveTheme: (theme: themeConfig) => Promise<ipcResponse<void>>
+  deleteTheme: (themeId: string) => Promise<ipcResponse<void>>
   setCustomTheme: (config: {
     effect: 'mica' | 'tabbed' | 'acrylic' | 'blur' | 'transparent' | 'none'
     theme: 'auto' | 'dark' | 'light'

@@ -7,6 +7,8 @@ const api = {
   getThemes: () => ipcRenderer.invoke('theme:list'),
   getCurrentTheme: () => ipcRenderer.invoke('theme:current'),
   setTheme: (themeId: string) => ipcRenderer.invoke('theme:set', themeId),
+  saveTheme: (theme: themeConfig) => ipcRenderer.invoke('theme:save', theme),
+  deleteTheme: (themeId: string) => ipcRenderer.invoke('theme:delete', themeId),
   setCustomTheme: (config: {
     effect: 'mica' | 'tabbed' | 'acrylic' | 'blur' | 'transparent' | 'none'
     theme: 'auto' | 'dark' | 'light'

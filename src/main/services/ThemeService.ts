@@ -88,19 +88,62 @@ export class ThemeService extends Service {
       return { success: true }
     })
 
-    this.mainCtx.handle('theme:set-custom', async (event, config: {
-      effect: 'mica' | 'tabbed' | 'acrylic' | 'blur' | 'transparent' | 'none'
-      theme: 'auto' | 'dark' | 'light'
-      radius: 'small' | 'medium' | 'large'
-    }) => {
+    this.mainCtx.handle('theme:save', async (event, theme: themeConfig) => {
       if (!this.mainCtx.permissions.requirePermission(event, 'admin'))
         return { success: false, message: 'Permission denied' }
 
-      this.currentThemeId = 'custom'
-      this.applyMicaConfig(config)
-      this.notifyThemeUpdate()
-      return { success: true }
+      try {
+        const filePath = path.join(this.themeDir, `${theme.id}.json`)
+        fs.writeFileSync(filePath, JSON.stringify(theme, null, 2), 'utf-8')
+        this.notifyThemeUpdate()
+        return { success: true }
+      } catch (e) {
+        return { success: false, message: String(e) }
+      }
     })
+
+    this.mainCtx.handle('theme:delete', async (event, themeId: string) => {
+      if (!this.mainCtx.permissions.requirePermission(event, 'admin'))
+        return { success: false, message: 'Permission denied' }
+
+      if (themeId.startsWith('default-')) {
+        return { success: false, message: 'Cannot delete default themes' }
+      }
+
+      try {
+        const filePath = path.join(this.themeDir, `${themeId}.json`)
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath)
+        }
+        if (this.currentThemeId === themeId) {
+          this.currentThemeId = 'light' // Fallback
+        }
+        this.notifyThemeUpdate()
+        return { success: true }
+      } catch (e) {
+        return { success: false, message: String(e) }
+      }
+    })
+
+    this.mainCtx.handle(
+      'theme:set-custom',
+      async (
+        event,
+        config: {
+          effect: 'mica' | 'tabbed' | 'acrylic' | 'blur' | 'transparent' | 'none'
+          theme: 'auto' | 'dark' | 'light'
+          radius: 'small' | 'medium' | 'large'
+        }
+      ) => {
+        if (!this.mainCtx.permissions.requirePermission(event, 'admin'))
+          return { success: false, message: 'Permission denied' }
+
+        this.currentThemeId = 'custom'
+        this.applyMicaConfig(config)
+        this.notifyThemeUpdate()
+        return { success: true }
+      }
+    )
   }
 
   private applyMicaEffect(themeId: string) {
@@ -116,9 +159,9 @@ export class ThemeService extends Service {
     radius: 'small' | 'medium' | 'large'
   }) {
     const radiusMap: Record<string, 'rounded' | 'small' | 'square'> = {
-      'small': 'small',
-      'medium': 'rounded',
-      'large': 'rounded'
+      small: 'small',
+      medium: 'rounded',
+      large: 'rounded'
     }
 
     const windows = BrowserWindow.getAllWindows()

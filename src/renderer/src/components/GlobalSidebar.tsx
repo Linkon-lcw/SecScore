@@ -55,7 +55,6 @@ export const GlobalSidebar: React.FC = () => {
     // 1. 先隐藏三角
     setShowToggle(false)
 
-
     // 2. 稍后扩大窗口
     setTimeout(() => {
       if ((window as any).api) {

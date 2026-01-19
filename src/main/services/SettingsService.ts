@@ -91,7 +91,8 @@ export class SettingsService extends Service {
       kind: 'string',
       defaultValue: 'mica',
       writePermission: 'admin',
-      validate: (v) => ['mica', 'tabbed', 'acrylic', 'blur', 'transparent', 'none'].includes(v as string)
+      validate: (v) =>
+        ['mica', 'tabbed', 'acrylic', 'blur', 'transparent', 'none'].includes(v as string)
     },
     window_radius: {
       kind: 'string',

@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react'
 import { Layout, Space, Button, Tag, Loading } from 'tdesign-react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { WindowControls } from './WindowControls'
+import { ThemeEditor } from './ThemeEditor'
 
 const Home = lazy(() => import('./Home').then((m) => ({ default: m.Home })))
 const StudentManager = lazy(() =>
@@ -125,6 +126,7 @@ export function ContentArea({
           </Routes>
         </Suspense>
       </Content>
+      <ThemeEditor />
     </Layout>
   )
 }
