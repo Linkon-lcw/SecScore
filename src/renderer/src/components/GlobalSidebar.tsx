@@ -96,7 +96,7 @@ export const GlobalSidebar: React.FC = () => {
     <div
       style={{
         height: '100vh',
-        width: `${84 * zoom}px`,
+        width: `84px`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
@@ -110,8 +110,8 @@ export const GlobalSidebar: React.FC = () => {
         className={`global-sidebar-toggle ${!showToggle ? 'hidden' : ''}`}
         style={{
           willChange: 'opacity, transform',
-          width: `${24 * zoom}px`,
-          height: `${60 * zoom}px`
+          width: `24px`,
+          height: `60px`
         }}
       >
         <ChevronLeftIcon />
@@ -124,9 +124,9 @@ export const GlobalSidebar: React.FC = () => {
           backgroundColor: 'var(--ss-card-bg)',
           height: 'fit-content',
           willChange: 'opacity, transform',
-          width: `${60 * zoom}px`,
-          padding: `${12 * zoom}px ${8 * zoom}px`,
-          gap: `${12 * zoom}px`
+          width: `60px`,
+          padding: `12px 8px`,
+          gap: `12px`
         }}
       >
         {/* 顶部的关闭/收起按钮 */}
@@ -171,15 +171,17 @@ export const GlobalSidebar: React.FC = () => {
           </Button>
         </Tooltip>
 
-        <Tooltip content="开发者工具" placement="top">
-          <Button
-            shape="circle"
-            variant="text"
-            onClick={() => (window as any).api?.toggleDevTools()}
-          >
-            <CodeIcon size="24px" />
-          </Button>
-        </Tooltip>
+        {import.meta.env.DEV && (
+          <Tooltip content="开发者工具" placement="top">
+            <Button
+              shape="circle"
+              variant="text"
+              onClick={() => (window as any).api?.toggleDevTools()}
+            >
+              <CodeIcon size="24px" />
+            </Button>
+          </Tooltip>
+        )}
       </div>
     </div>
   )
