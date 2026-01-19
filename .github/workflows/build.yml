@@ -86,7 +86,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: dist-win
-          path: dist/**
+          path: |
+            dist/*.exe
+            dist/*.msi
+            dist/*.zip
+            dist/latest*.yml
 
   build_mac:
     needs: parse
@@ -115,7 +119,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: dist-mac
-          path: dist/**
+          path: |
+            dist/*.dmg
+            dist/*.pkg
+            dist/*.zip
+            dist/latest*.yml
 
   build_linux:
     needs: parse
@@ -144,7 +152,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: dist-linux
-          path: dist/**
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.snap
+            dist/latest*.yml
 
   build_unpack:
     needs: parse
@@ -173,7 +186,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: dist-unpack
-          path: dist/**
+          path: |
+            dist/*.exe
+            dist/*.zip
+            dist/latest*.yml
 
   release:
     needs: [parse, build_win, build_mac, build_linux, build_unpack]
@@ -192,4 +208,7 @@ jobs:
           draft: false
           prerelease: ${{ contains(needs.parse.outputs.version, '-') }}
           files: |
-            artifacts/**/*
+            artifacts/dist-win/*
+            artifacts/dist-mac/*
+            artifacts/dist-linux/*
+            artifacts/dist-unpack/*
