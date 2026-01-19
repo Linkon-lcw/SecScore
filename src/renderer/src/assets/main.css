@@ -1,6 +1,15 @@
 @import 'tdesign-react/dist/reset.css';
 @import 'tdesign-react/dist/tdesign.css';
 
+/* 没用过tdesign，有ai或者人类会用顺便帮我改一下 */
+.t-layout {
+  background-color: var(--ss-bg-color) !important;
+}
+.t-default-menu{
+  background-color: transparent !important;
+}
+/* 没用过tdesign，有ai或者人类会用顺便帮我改一下 */
+
 html,
 body,
 #root {

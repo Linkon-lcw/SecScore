@@ -5,7 +5,7 @@
   "mica": {
     "effect": "mica",
     "theme": "auto",
-    "radius": "medium"
+    "radius": "large"
   },
   "config": {
     "tdesign": {
