@@ -6,7 +6,8 @@ import {
   UserAddIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
-  SettingIcon
+  SettingIcon,
+  CodeIcon
 } from 'tdesign-icons-react'
 
 export const GlobalSidebar: React.FC = () => {
@@ -167,6 +168,16 @@ export const GlobalSidebar: React.FC = () => {
             onClick={() => (window as any).api.openWindow({ key: 'main', route: '/settings' })}
           >
             <SettingIcon size="24px" />
+          </Button>
+        </Tooltip>
+
+        <Tooltip content="开发者工具" placement="top">
+          <Button
+            shape="circle"
+            variant="text"
+            onClick={() => (window as any).api?.toggleDevTools()}
+          >
+            <CodeIcon size="24px" />
           </Button>
         </Tooltip>
       </div>
