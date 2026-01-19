@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button, Tooltip } from 'tdesign-react'
 import {
   HomeIcon,
@@ -12,6 +12,31 @@ import {
 export const GlobalSidebar: React.FC = () => {
   const [expanded, setExpanded] = useState(false)
   const [showToggle, setShowToggle] = useState(true)
+  const [zoom, setZoom] = useState(1.0)
+
+  useEffect(() => {
+    if (!(window as any).api) return
+
+    // 加载初始缩放值
+    const loadZoom = async () => {
+      const res = await (window as any).api.getSetting('window_zoom')
+      if (res.success && res.data) {
+        setZoom(res.data)
+      }
+    }
+    loadZoom()
+
+    // 监听缩放变化
+    const unsubscribe = (window as any).api.onSettingChanged((change: any) => {
+      if (change?.key === 'window_zoom') {
+        setZoom(change.value)
+      }
+    })
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe()
+    }
+  }, [])
 
   const handleExpand = () => {
     // 1. 先隐藏三角
@@ -20,7 +45,9 @@ export const GlobalSidebar: React.FC = () => {
     // 2. 稍后扩大窗口
     setTimeout(() => {
       if ((window as any).api) {
-        ;(window as any).api.windowResize(84, 300)
+        const width = Math.round(84 * zoom)
+        const height = Math.round(300 * zoom)
+        ;(window as any).api.windowResize(width, height)
       }
       // 3. 最后显示侧边栏内容
       setTimeout(() => {
@@ -36,7 +63,9 @@ export const GlobalSidebar: React.FC = () => {
     // 2. 稍后缩小窗口
     setTimeout(() => {
       if ((window as any).api) {
-        ;(window as any).api.windowResize(24, 300)
+        const width = Math.round(24 * zoom)
+        const height = Math.round(300 * zoom)
+        ;(window as any).api.windowResize(width, height)
       }
       // 3. 最后重新显示三角（等待透明度动画完成）
       setTimeout(() => {
@@ -54,7 +83,7 @@ export const GlobalSidebar: React.FC = () => {
     <div
       style={{
         height: '100vh',
-        width: '84px',
+        width: `${84 * zoom}px`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
@@ -66,7 +95,11 @@ export const GlobalSidebar: React.FC = () => {
       <div
         onClick={handleExpand}
         className={`global-sidebar-toggle ${!showToggle ? 'hidden' : ''}`}
-        style={{ willChange: 'opacity, transform' }}
+        style={{
+          willChange: 'opacity, transform',
+          width: `${24 * zoom}px`,
+          height: `${60 * zoom}px`
+        }}
       >
         <ChevronLeftIcon />
       </div>
@@ -77,7 +110,10 @@ export const GlobalSidebar: React.FC = () => {
         style={{
           backgroundColor: 'var(--ss-card-bg)',
           height: 'fit-content',
-          willChange: 'opacity, transform'
+          willChange: 'opacity, transform',
+          width: `${60 * zoom}px`,
+          padding: `${12 * zoom}px ${8 * zoom}px`,
+          gap: `${12 * zoom}px`
         }}
       >
         {/* 顶部的关闭/收起按钮 */}
@@ -90,19 +126,19 @@ export const GlobalSidebar: React.FC = () => {
           <ChevronRightIcon size="20px" />
         </Button>
 
-        <Tooltip content="主界面" placement="left">
+        <Tooltip content="主界面" placement="top">
           <Button shape="circle" variant="text" onClick={openMain}>
             <HomeIcon size="24px" />
           </Button>
         </Tooltip>
 
-        <Tooltip content="积分操作" placement="left">
+        <Tooltip content="积分操作" placement="top">
           <Button shape="circle" variant="text" onClick={() => openMain()}>
             <UserAddIcon size="24px" />
           </Button>
         </Tooltip>
 
-        <Tooltip content="排行榜" placement="left">
+        <Tooltip content="排行榜" placement="top">
           <Button
             shape="circle"
             variant="text"
@@ -112,7 +148,7 @@ export const GlobalSidebar: React.FC = () => {
           </Button>
         </Tooltip>
 
-        <Tooltip content="设置" placement="left">
+        <Tooltip content="设置" placement="top">
           <Button
             shape="circle"
             variant="text"
