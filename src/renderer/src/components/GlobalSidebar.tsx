@@ -30,13 +30,25 @@ export const GlobalSidebar: React.FC = () => {
     const unsubscribe = (window as any).api.onSettingChanged((change: any) => {
       if (change?.key === 'window_zoom') {
         setZoom(change.value)
+        // 缩放变化时，重新应用当前展开/收缩状态的窗口大小
+        if ((window as any).api) {
+          if (expanded) {
+            const width = Math.round(84 * change.value)
+            const height = Math.round(300 * change.value)
+            ;(window as any).api.windowResize(width, height)
+          } else {
+            const width = Math.round(24 * change.value)
+            const height = Math.round(300 * change.value)
+            ;(window as any).api.windowResize(width, height)
+          }
+        }
       }
     })
 
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe()
     }
-  }, [])
+  }, [expanded])
 
   const handleExpand = () => {
     // 1. 先隐藏三角
