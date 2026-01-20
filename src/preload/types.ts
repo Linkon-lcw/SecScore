@@ -139,7 +139,7 @@ export interface electronApi {
   onWindowMaximizedChanged: (callback: (maximized: boolean) => void) => () => void
   onNavigate: (callback: (route: string) => void) => () => void
   toggleDevTools: () => Promise<void>
-  windowResize: (width: number, height: number) => Promise<void>
+  windowResize: (width: number, height: number, x?: number, y?: number) => Promise<void>
 
   // Logger
   queryLogs: (lines?: number) => Promise<ipcResponse<string[]>>

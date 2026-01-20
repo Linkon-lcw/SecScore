@@ -93,8 +93,8 @@ const api = {
     return () => ipcRenderer.removeListener('app:navigate', subscription)
   },
   toggleDevTools: () => ipcRenderer.invoke('window:toggle-devtools'),
-  windowResize: (width: number, height: number) =>
-    ipcRenderer.invoke('window:resize', width, height),
+  windowResize: (width: number, height: number, x?: number, y?: number) =>
+    ipcRenderer.invoke('window:resize', width, height, x, y),
 
   // Logger
   queryLogs: (lines?: number) => ipcRenderer.invoke('log:query', lines),

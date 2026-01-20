@@ -439,14 +439,13 @@ export class WindowManager extends Service {
       }
     })
 
-    this.mainCtx.handle('window:resize', (event, width: number, height: number) => {
+    this.mainCtx.handle('window:resize', (event, width: number, height: number, x?: number, y?: number) => {
       const win = BrowserWindow.fromWebContents(event.sender)
       if (win) {
         const bounds = win.getBounds()
-        const newX = bounds.x + (bounds.width - width)
         win.setBounds({
-          x: newX,
-          y: bounds.y,
+          x: x ?? bounds.x,
+          y: y ?? bounds.y,
           width,
           height
         })

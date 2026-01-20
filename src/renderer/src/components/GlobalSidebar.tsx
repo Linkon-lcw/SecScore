@@ -36,11 +36,11 @@ export const GlobalSidebar: React.FC = () => {
           if (expanded) {
             const width = Math.round(84 * change.value)
             const height = Math.round(300 * change.value)
-            ;(window as any).api.windowResize(width, height)
+            resizeWindow(width, height)
           } else {
             const width = Math.round(24 * change.value)
             const height = Math.round(300 * change.value)
-            ;(window as any).api.windowResize(width, height)
+            resizeWindow(width, height)
           }
         }
       }
@@ -51,6 +51,13 @@ export const GlobalSidebar: React.FC = () => {
     }
   }, [expanded])
 
+  const resizeWindow = (w: number, h: number) => {
+    if (!(window as any).api) return
+    const x = window.screen.availWidth - w
+    const y = Math.floor(window.screen.availHeight / 2 - h / 2)
+    ;(window as any).api.windowResize(w, h, x, y)
+  }
+
   const handleExpand = () => {
     // 1. 先隐藏三角
     setShowToggle(false)
@@ -60,7 +67,7 @@ export const GlobalSidebar: React.FC = () => {
       if ((window as any).api) {
         const width = Math.round(60 * zoom)
         const height = Math.round(300 * zoom)
-        ;(window as any).api.windowResize(width, height)
+        resizeWindow(width, height)
       }
       // 3. 最后显示侧边栏内容
       setTimeout(() => {
@@ -78,7 +85,7 @@ export const GlobalSidebar: React.FC = () => {
       if ((window as any).api) {
         const width = Math.round(24 * zoom)
         const height = Math.round(58 * zoom)
-        ;(window as any).api.windowResize(width, height)
+        resizeWindow(width, height)
       }
       // 3. 最后重新显示三角（等待透明度动画完成）
       setTimeout(() => {
