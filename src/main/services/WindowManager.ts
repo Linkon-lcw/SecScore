@@ -117,7 +117,7 @@ export class WindowManager extends Service {
       // 主窗口：使用原生标题栏，但不显示操作按钮
       baseOptions.frame = true
       baseOptions.transparent = false
-      baseOptions.titleBarStyle = 'hidden'
+      // baseOptions.titleBarStyle = 'hidden'
       baseOptions.titleBarOverlay = true // 允许自定义标题栏区域
       baseOptions.backgroundColor = '#ffffff'
       baseOptions.resizable = true
