@@ -15,10 +15,16 @@ export const GlobalSidebar: React.FC = () => {
   const [showToggle, setShowToggle] = useState(true)
   const [zoom, setZoom] = useState(1.0)
 
+  const resizeWindow = (w: number, h: number) => {
+    if (!(window as any).api) return
+    const x = window.screen.availWidth - w
+    const y = Math.floor(window.screen.availHeight / 2 - h / 2)
+    ;(window as any).api.windowResize(w, h, x, y)
+  }
+
   useEffect(() => {
     if (!(window as any).api) return
 
-    // 加载初始缩放值
     const loadZoom = async () => {
       const res = await (window as any).api.getSetting('window_zoom')
       if (res.success && res.data) {
@@ -27,11 +33,9 @@ export const GlobalSidebar: React.FC = () => {
     }
     loadZoom()
 
-    // 监听缩放变化
     const unsubscribe = (window as any).api.onSettingChanged((change: any) => {
       if (change?.key === 'window_zoom') {
         setZoom(change.value)
-        // 缩放变化时，重新应用当前展开/收缩状态的窗口大小
         if ((window as any).api) {
           if (expanded) {
             const width = Math.round(84 * change.value)
@@ -50,13 +54,6 @@ export const GlobalSidebar: React.FC = () => {
       if (typeof unsubscribe === 'function') unsubscribe()
     }
   }, [expanded])
-
-  const resizeWindow = (w: number, h: number) => {
-    if (!(window as any).api) return
-    const x = window.screen.availWidth - w
-    const y = Math.floor(window.screen.availHeight / 2 - h / 2)
-    ;(window as any).api.windowResize(w, h, x, y)
-  }
 
   const handleExpand = () => {
     // 1. 先隐藏三角

@@ -1,7 +1,7 @@
 import { win32 } from 'path'
 import { Service } from '../../shared/kernel'
 import { MainContext } from '../context'
-import { BrowserWindow, shell, screen } from 'electron'
+import { BrowserWindow, shell, screen, nativeTheme } from 'electron'
 import type { BrowserWindowConstructorOptions } from 'electron'
 
 let micaElectron: typeof import('mica-electron') | null = null
@@ -123,7 +123,7 @@ export class WindowManager extends Service {
       // 主窗口：使用原生标题栏，但不显示操作按钮
       baseOptions.frame = true
       baseOptions.transparent = false
-      baseOptions.titleBarStyle = `${win32 ? 'default' : 'hidden'}`
+      baseOptions.titleBarStyle = `${win32 ? 'hidden' : 'hidden'}`
       baseOptions.titleBarOverlay = {
         height: 48,
         color: '#00000000'
@@ -227,6 +227,19 @@ export class WindowManager extends Service {
     win: BrowserWindow,
     effect: 'mica' | 'tabbed' | 'acrylic' | 'blur' | 'transparent' | 'none' = 'mica'
   ) {
+    if (process.platform === 'win32' && IS_WINDOWS_11) {
+      const materialMap: Record<string, 'mica' | 'tabbed' | 'acrylic' | 'none'> = {
+        mica: 'mica',
+        tabbed: 'tabbed',
+        acrylic: 'acrylic',
+        blur: 'mica',
+        transparent: 'none',
+        none: 'none'
+      }
+      win.setBackgroundMaterial(materialMap[effect] || 'none')
+      return
+    }
+
     if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
 
@@ -267,6 +280,20 @@ export class WindowManager extends Service {
   }
 
   public setMicaTheme(win: BrowserWindow, theme: 'auto' | 'dark' | 'light' = 'auto') {
+    if (process.platform === 'win32' && IS_WINDOWS_11) {
+      switch (theme) {
+        case 'dark':
+          nativeTheme.themeSource = 'dark'
+          break
+        case 'light':
+          nativeTheme.themeSource = 'light'
+          break
+        default:
+          nativeTheme.themeSource = 'system'
+      }
+      return
+    }
+
     if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
 
@@ -287,6 +314,10 @@ export class WindowManager extends Service {
   }
 
   public setMicaCorner(win: BrowserWindow, corner: 'rounded' | 'small' | 'square' = 'rounded') {
+    if (process.platform === 'win32' && IS_WINDOWS_11) {
+      return
+    }
+
     if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
 
@@ -307,6 +338,9 @@ export class WindowManager extends Service {
   }
 
   public setMicaBorderColor(win: BrowserWindow, color: string | null) {
+    if (process.platform === 'win32' && IS_WINDOWS_11) {
+      return
+    }
     if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
     if (typeof micaWin.setBorderColor !== 'function') {
@@ -316,6 +350,9 @@ export class WindowManager extends Service {
   }
 
   public setMicaCaptionColor(win: BrowserWindow, color: string | null) {
+    if (process.platform === 'win32' && IS_WINDOWS_11) {
+      return
+    }
     if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
     if (typeof micaWin.setCaptionColor !== 'function') {
@@ -325,6 +362,9 @@ export class WindowManager extends Service {
   }
 
   public setMicaTitleTextColor(win: BrowserWindow, color: string | null) {
+    if (process.platform === 'win32' && IS_WINDOWS_11) {
+      return
+    }
     if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
     if (typeof micaWin.setTitleTextColor !== 'function') {
