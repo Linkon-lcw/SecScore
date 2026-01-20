@@ -1,3 +1,4 @@
+import { win32 } from 'path'
 import { Service } from '../../shared/kernel'
 import { MainContext } from '../context'
 import { BrowserWindow, shell, screen } from 'electron'
@@ -7,16 +8,20 @@ let micaElectron: typeof import('mica-electron') | null = null
 let MicaBrowserWindow: any = null
 let IS_WINDOWS_11 = false
 
-try {
+async function initMicaElectron() {
   if (process.platform === 'win32') {
-    const micaModule = require('mica-electron')
-    micaElectron = micaModule
-    MicaBrowserWindow = micaModule.MicaBrowserWindow
-    IS_WINDOWS_11 = micaModule.IS_WINDOWS_11
+    try {
+      const micaModule = await import('mica-electron')
+      micaElectron = micaModule
+      MicaBrowserWindow = micaModule.MicaBrowserWindow
+      IS_WINDOWS_11 = micaModule.IS_WINDOWS_11
+    } catch (error) {
+      console.warn('mica-electron not available:', error)
+    }
   }
-} catch (error) {
-  console.warn('mica-electron not available:', error)
 }
+
+initMicaElectron()
 
 interface MicaWindow extends BrowserWindow {
   setMicaEffect(): void
@@ -41,6 +46,7 @@ export type windowOpenInput = {
   title?: string
   route?: string
   options?: BrowserWindowConstructorOptions
+  useMica?: boolean
 }
 
 export type windowManagerOptions = {
@@ -117,7 +123,7 @@ export class WindowManager extends Service {
       // 主窗口：使用原生标题栏，但不显示操作按钮
       baseOptions.frame = true
       baseOptions.transparent = false
-      baseOptions.titleBarStyle = 'hidden'
+      baseOptions.titleBarStyle = `${win32 ? 'default' : 'hidden'}`
       baseOptions.titleBarOverlay = {
         height: 48,
         color: '#00000000'
@@ -133,9 +139,8 @@ export class WindowManager extends Service {
     }
 
     let win: BrowserWindow
-    if (MicaBrowserWindow) {
+    if (input.useMica && MicaBrowserWindow) {
       win = new MicaBrowserWindow(baseOptions)
-      this.applyMicaEffect(win)
     } else {
       win = new BrowserWindow(baseOptions)
     }
@@ -202,15 +207,11 @@ export class WindowManager extends Service {
     })
 
     win.on('blur', () => {
-      if (input.key === 'global-sidebar' || input.key === 'main') {
-        this.applyMicaEffect(win)
-      }
+      // Mica effect is no longer applied automatically
     })
 
     win.on('focus', () => {
-      if (input.key === 'global-sidebar' || input.key === 'main') {
-        this.applyMicaEffect(win)
-      }
+      // Mica effect is no longer applied automatically
     })
 
     win.webContents.setWindowOpenHandler((details) => {
@@ -222,68 +223,16 @@ export class WindowManager extends Service {
     return win
   }
 
-  private applyMicaEffect(win: BrowserWindow) {
-    if (!micaElectron) return
-    const micaWin = win as MicaWindow
-
-    const theme = this.mainCtx.settings.getValue('window_theme')
-    switch (theme) {
-      case 'dark':
-        micaWin.setDarkTheme()
-        break
-      case 'light':
-        micaWin.setLightTheme()
-        break
-      default:
-        micaWin.setAutoTheme()
-    }
-
-    const effect = this.mainCtx.settings.getValue('window_effect')
-    switch (effect) {
-      case 'mica':
-        micaWin.setMicaEffect()
-        break
-      case 'tabbed':
-        micaWin.setMicaTabbedEffect()
-        break
-      case 'acrylic':
-        if (IS_WINDOWS_11) {
-          micaWin.setMicaAcrylicEffect()
-        } else {
-          micaWin.setAcrylic()
-        }
-        break
-      case 'blur':
-        if (!IS_WINDOWS_11) {
-          micaWin.setBlur()
-        }
-        break
-      case 'transparent':
-        if (!IS_WINDOWS_11) {
-          micaWin.setTransparent()
-        }
-        break
-    }
-
-    const radius = this.mainCtx.settings.getValue('window_radius')
-    switch (radius) {
-      case 'small':
-        micaWin.setSmallRoundedCorner()
-        break
-      case 'square':
-        micaWin.setSquareCorner()
-        break
-      default:
-        micaWin.setRoundedCorner()
-    }
-  }
-
   public setMicaEffect(
     win: BrowserWindow,
     effect: 'mica' | 'tabbed' | 'acrylic' | 'blur' | 'transparent' | 'none' = 'mica'
   ) {
-    if (!micaElectron) return
+    if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
+
+    if (typeof micaWin.setMicaEffect !== 'function') {
+      return
+    }
 
     switch (effect) {
       case 'mica':
@@ -318,8 +267,12 @@ export class WindowManager extends Service {
   }
 
   public setMicaTheme(win: BrowserWindow, theme: 'auto' | 'dark' | 'light' = 'auto') {
-    if (!micaElectron) return
+    if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
+
+    if (typeof micaWin.setDarkTheme !== 'function') {
+      return
+    }
 
     switch (theme) {
       case 'dark':
@@ -334,8 +287,12 @@ export class WindowManager extends Service {
   }
 
   public setMicaCorner(win: BrowserWindow, corner: 'rounded' | 'small' | 'square' = 'rounded') {
-    if (!micaElectron) return
+    if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
+
+    if (typeof micaWin.setRoundedCorner !== 'function') {
+      return
+    }
 
     switch (corner) {
       case 'small':
@@ -350,20 +307,29 @@ export class WindowManager extends Service {
   }
 
   public setMicaBorderColor(win: BrowserWindow, color: string | null) {
-    if (!micaElectron) return
+    if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
+    if (typeof micaWin.setBorderColor !== 'function') {
+      return
+    }
     micaWin.setBorderColor(color)
   }
 
   public setMicaCaptionColor(win: BrowserWindow, color: string | null) {
-    if (!micaElectron) return
+    if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
+    if (typeof micaWin.setCaptionColor !== 'function') {
+      return
+    }
     micaWin.setCaptionColor(color)
   }
 
   public setMicaTitleTextColor(win: BrowserWindow, color: string | null) {
-    if (!micaElectron) return
+    if (!micaElectron || !MicaBrowserWindow) return
     const micaWin = win as MicaWindow
+    if (typeof micaWin.setTitleTextColor !== 'function') {
+      return
+    }
     micaWin.setTitleTextColor(color)
   }
 
