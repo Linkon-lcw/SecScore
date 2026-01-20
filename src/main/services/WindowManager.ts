@@ -112,9 +112,21 @@ export class WindowManager extends Service {
     // Special options for different window types
     if (input.key === 'global-sidebar') {
       baseOptions.resizable = false
-    } else {
-      // Main window and other windows should be resizable
+      baseOptions.frame = false
+    } else if (input.key === 'main') {
+      // 主窗口：使用原生标题栏，但不显示操作按钮
+      baseOptions.frame = true
+      baseOptions.transparent = false
+      baseOptions.titleBarStyle = 'hidden'
+      baseOptions.titleBarOverlay = true // 允许自定义标题栏区域
+      baseOptions.backgroundColor = '#ffffff'
       baseOptions.resizable = true
+      baseOptions.minimizable = true
+      baseOptions.maximizable = true
+    } else {
+      // 其他窗口：默认可调整大小，带完整框架
+      baseOptions.resizable = true
+      baseOptions.frame = true
     }
 
     let win: BrowserWindow
@@ -165,9 +177,25 @@ export class WindowManager extends Service {
     // Notify renderer about maximize state changes
     win.on('maximize', () => {
       win.webContents.send('window:maximized-changed', true)
+      // Fix Windows resize issue after maximize
+      if (process.platform === 'win32') {
+        setTimeout(() => {
+          win.setResizable(true)
+          win.setMaximizable(true)
+          win.setMinimizable(true)
+        }, 100)
+      }
     })
     win.on('unmaximize', () => {
       win.webContents.send('window:maximized-changed', false)
+      // Fix Windows resize issue after unmaximize
+      if (process.platform === 'win32') {
+        setTimeout(() => {
+          win.setResizable(true)
+          win.setMaximizable(true)
+          win.setMinimizable(true)
+        }, 100)
+      }
     })
 
     win.on('blur', () => {
@@ -409,9 +437,25 @@ export class WindowManager extends Service {
       if (win) {
         if (win.isMaximized()) {
           win.unmaximize()
+          // Fix Windows resize issue after unmaximize
+          if (process.platform === 'win32') {
+            setTimeout(() => {
+              win.setResizable(true)
+              win.setMaximizable(true)
+              win.setMinimizable(true)
+            }, 150)
+          }
           return false
         } else {
           win.maximize()
+          // Fix Windows resize issue after maximize
+          if (process.platform === 'win32') {
+            setTimeout(() => {
+              win.setResizable(true)
+              win.setMaximizable(true)
+              win.setMinimizable(true)
+            }, 150)
+          }
           return true
         }
       }

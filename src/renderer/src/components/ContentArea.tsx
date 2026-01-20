@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react'
 import { Layout, Space, Button, Tag, Loading } from 'tdesign-react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { WindowControls } from './WindowControls'
+// import { WindowControls } from './WindowControls' // 使用原生标题栏，隐藏自定义控制按钮
 import { ThemeEditor } from './ThemeEditor'
 
 const Home = lazy(() => import('./Home').then((m) => ({ default: m.Home })))
@@ -89,7 +89,7 @@ export function ContentArea({
               </>
             )}
           </Space>
-          <WindowControls />
+          {/* 原生标题栏已启用，不显示自定义窗口控制按钮 */}
         </div>
       </div>
 
