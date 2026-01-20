@@ -109,6 +109,14 @@ export class WindowManager extends Service {
       ...input.options
     }
 
+    // Special options for different window types
+    if (input.key === 'global-sidebar') {
+      baseOptions.resizable = false
+    } else {
+      // Main window and other windows should be resizable
+      baseOptions.resizable = true
+    }
+
     let win: BrowserWindow
     if (MicaBrowserWindow) {
       win = new MicaBrowserWindow(baseOptions)
@@ -132,7 +140,6 @@ export class WindowManager extends Service {
       win.setAlwaysOnTop(true, 'screen-saver')
       win.setVisibleOnAllWorkspaces(true)
       win.setSkipTaskbar(true)
-      win.setResizable(false)
     }
 
     const zoom = Number(this.mainCtx.settings.getValue('window_zoom')) || 1.0
@@ -439,18 +446,21 @@ export class WindowManager extends Service {
       }
     })
 
-    this.mainCtx.handle('window:resize', (event, width: number, height: number, x?: number, y?: number) => {
-      const win = BrowserWindow.fromWebContents(event.sender)
-      if (win) {
-        const bounds = win.getBounds()
-        win.setBounds({
-          x: x ?? bounds.x,
-          y: y ?? bounds.y,
-          width,
-          height
-        })
+    this.mainCtx.handle(
+      'window:resize',
+      (event, width: number, height: number, x?: number, y?: number) => {
+        const win = BrowserWindow.fromWebContents(event.sender)
+        if (win) {
+          const bounds = win.getBounds()
+          win.setBounds({
+            x: x ?? bounds.x,
+            y: y ?? bounds.y,
+            width,
+            height
+          })
+        }
       }
-    })
+    )
 
     this.mainCtx.handle('window:mica-effect', (_event, effect: string) => {
       const win = BrowserWindow.fromWebContents(_event.sender)
