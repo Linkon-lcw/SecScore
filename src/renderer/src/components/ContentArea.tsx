@@ -55,7 +55,7 @@ export function ContentArea({
       <div
         style={
           {
-            height: '32px',
+            height: '48px',
             WebkitAppRegion: 'drag',
             display: 'flex',
             alignItems: 'center',
@@ -65,18 +65,17 @@ export function ContentArea({
           } as React.CSSProperties
         }
       >
-        <div style={{ flex: 1 }} />
+
         <div
           style={
             {
               display: 'flex',
               alignItems: 'center',
-              paddingRight: '0px',
               WebkitAppRegion: 'no-drag'
             } as React.CSSProperties
           }
         >
-          <Space size="small" style={{ marginRight: '12px' }}>
+          <Space size="small" style={{ margin: '12px' }}>
             {permissionTag}
             {hasAnyPassword && (
               <>
@@ -90,6 +89,7 @@ export function ContentArea({
             )}
           </Space>
           {/* 原生标题栏已启用，不显示自定义窗口控制按钮 */}
+          <div style={{ flex: 1 }} />
         </div>
       </div>
 
