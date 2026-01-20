@@ -8,6 +8,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { ThemeEditorProvider } from './contexts/ThemeEditorContext'
 import { GlobalSidebar } from './components/GlobalSidebar'
 import { ThemeEditor } from './components/ThemeEditor'
+import { WindowResizeHandles } from './components/WindowResizeHandles'
 
 function MainContent(): React.JSX.Element {
   const navigate = useNavigate()
@@ -108,37 +109,40 @@ function MainContent(): React.JSX.Element {
   }
 
   return (
-    <Layout style={{ height: '100vh', flexDirection: 'row', overflow: 'hidden' }}>
-      <Sidebar activeMenu={activeMenu} permission={permission} onMenuChange={onMenuChange} />
-      <ContentArea
-        permission={permission}
-        hasAnyPassword={hasAnyPassword}
-        onAuthClick={() => setAuthVisible(true)}
-        onLogout={logout}
-      />
+    <div style={{ width: '100vw', height: '100vh', ...({ WebkitAppRegion: 'drag' } as React.CSSProperties) }}>
+      <WindowResizeHandles />
+      <Layout style={{ height: '100vh', flexDirection: 'row', overflow: 'hidden' }}>
+        <Sidebar activeMenu={activeMenu} permission={permission} onMenuChange={onMenuChange} />
+        <ContentArea
+          permission={permission}
+          hasAnyPassword={hasAnyPassword}
+          onAuthClick={() => setAuthVisible(true)}
+          onLogout={logout}
+        />
 
-      <Wizard visible={wizardVisible} onComplete={() => setWizardVisible(false)} />
+        <Wizard visible={wizardVisible} onComplete={() => setWizardVisible(false)} />
 
-      <Dialog
-        header="权限解锁"
-        visible={authVisible}
-        onClose={() => setAuthVisible(false)}
-        onConfirm={login}
-        confirmBtn={{ content: '解锁', loading: authLoading }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ color: 'var(--ss-text-secondary)', fontSize: '12px' }}>
-            输入 6 位数字密码：管理密码=全功能，积分密码=仅积分操作。
+        <Dialog
+          header="权限解锁"
+          visible={authVisible}
+          onClose={() => setAuthVisible(false)}
+          onConfirm={login}
+          confirmBtn={{ content: '解锁', loading: authLoading }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ color: 'var(--ss-text-secondary)', fontSize: '12px' }}>
+              输入 6 位数字密码：管理密码=全功能，积分密码=仅积分操作。
+            </div>
+            <Input
+              value={authPassword}
+              onChange={(v) => setAuthPassword(v)}
+              placeholder="例如 123456"
+              maxlength={6}
+            />
           </div>
-          <Input
-            value={authPassword}
-            onChange={(v) => setAuthPassword(v)}
-            placeholder="例如 123456"
-            maxlength={6}
-          />
-        </div>
-      </Dialog>
-    </Layout>
+        </Dialog>
+      </Layout>
+    </div>
   )
 }
 
