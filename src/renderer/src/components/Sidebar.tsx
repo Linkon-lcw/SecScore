@@ -5,7 +5,8 @@ import {
   HistoryIcon,
   RootListIcon,
   ViewListIcon,
-  HomeIcon
+  HomeIcon,
+  ReplayIcon
 } from 'tdesign-icons-react'
 import appLogo from '../assets/logoHD.svg'
 
@@ -68,6 +69,7 @@ export function Sidebar({ activeMenu, permission, onMenuChange }: SidebarProps):
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         <Menu value={activeMenu} onChange={onMenuChange} style={{ width: '100%', border: 'none' }}>
           <Menu.MenuItem value="home" icon={<HomeIcon />}>
+            {' '}
             主页
           </Menu.MenuItem>
           <Menu.MenuItem value="students" icon={<UserIcon />} disabled={permission !== 'admin'}>
@@ -75,6 +77,9 @@ export function Sidebar({ activeMenu, permission, onMenuChange }: SidebarProps):
           </Menu.MenuItem>
           <Menu.MenuItem value="score" icon={<HistoryIcon />}>
             积分管理
+          </Menu.MenuItem>
+          <Menu.MenuItem value="auto-score" icon={<ReplayIcon />}>
+            自动加分
           </Menu.MenuItem>
           <Menu.MenuItem value="leaderboard" icon={<ViewListIcon />}>
             排行榜

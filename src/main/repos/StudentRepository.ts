@@ -6,6 +6,7 @@ export interface student {
   id: number
   name: string
   score: number
+  tags?: string[]
   extra_json?: string
 }
 
@@ -74,7 +75,26 @@ export class StudentRepository extends Service {
 
   async findAll(): Promise<student[]> {
     const repo = this.ctx.db.dataSource.getRepository(StudentEntity)
-    return (await repo.find({ order: { score: 'DESC', name: 'ASC' } })) as any
+    const entities = await repo.find({
+      select: ['id', 'name', 'score', 'tags', 'extra_json', 'created_at', 'updated_at'],
+      order: { score: 'DESC', name: 'ASC' }
+    })
+
+    return entities.map((entity) => {
+      let tags: string[] = []
+      try {
+        tags = Array.isArray(entity.tags) ? entity.tags : JSON.parse(entity.tags || '[]')
+      } catch {
+        tags = []
+      }
+      return {
+        id: entity.id,
+        name: entity.name,
+        score: entity.score,
+        tags,
+        extra_json: entity.extra_json ?? undefined
+      }
+    })
   }
 
   async create(student: { name: string }): Promise<number> {
@@ -83,6 +103,7 @@ export class StudentRepository extends Service {
       name: String(student?.name ?? '').trim(),
       score: 0,
       extra_json: null,
+      tags: '[]',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
@@ -94,7 +115,11 @@ export class StudentRepository extends Service {
     const next: any = {}
     for (const [key, val] of Object.entries(student)) {
       if (key === 'id') continue
-      next[key] = val
+      if (key === 'tags') {
+        next[key] = JSON.stringify(val || [])
+      } else {
+        next[key] = val
+      }
     }
     next.updated_at = new Date().toISOString()
     await this.ctx.db.dataSource.getRepository(StudentEntity).update(id, next)
@@ -142,6 +167,7 @@ export class StudentRepository extends Service {
               typeof i.secrandomId === 'number'
                 ? JSON.stringify({ secrandom_id: i.secrandomId })
                 : null,
+            tags: '[]',
             created_at: now,
             updated_at: now
           }))

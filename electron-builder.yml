@@ -2,6 +2,11 @@ appId: com.secscore.app
 productName: SecScore
 directories:
   buildResources: build
+protocols:
+  - name: SecScore URL Protocol
+    schemes:
+      - secscore
+    role: Viewer
 files:
   - '!**/.vscode/*'
   - '!src/*'

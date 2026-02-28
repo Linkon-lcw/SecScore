@@ -3,7 +3,6 @@
 <!-- GitHub 徽章 -->
 <p align="center">
   <a href="https://github.com/SECTL/SecScore/releases"><img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/SECTL/SecScore?style=flat-square"></a>
-  <a href="https://github.com/SECTL/SecScore/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/SECTL/SecScore/ci.yml?style=flat-square&logo=github&label=CI"></a>
   <a href="https://github.com/SECTL/SecScore/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SECTL/SecScore/total?style=flat-square"></a>
   <a href="https://github.com/SECTL/SecScore/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/SECTL/SecScore?style=flat-square"></a>
   <a href="https://github.com/SECTL/SecScore/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/SECTL/SecScore?style=flat-square"></a>
@@ -16,8 +15,6 @@
 
 SecScore 是一款教育积分管理软件，基于 Electron  + React + TypeScript 开发，用于管理学生名单、记录加/扣分、查看排行榜与结算历史，并提供权限保护与数据备份。
 
-
-SecScore 是一款教育积分管理软件，基于 Electron  + React + TypeScript 开发，用于管理学生名单、记录加/扣分、查看排行榜与结算历史，并提供权限保护与数据备份。
 
 ## 主要功能
 

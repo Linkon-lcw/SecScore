@@ -29,9 +29,25 @@ export type settingsSpec = {
   window_theme: 'auto' | 'dark' | 'light'
   window_effect: 'mica' | 'tabbed' | 'acrylic' | 'blur' | 'transparent' | 'none'
   window_radius: 'rounded' | 'small' | 'square'
+  auto_score_enabled: boolean
+  auto_score_rules: any[]
+  current_theme_id: string
 }
 
 export type settingsKey = keyof settingsSpec
+
+export interface ConfigFileInfo {
+  name: string
+  path: string
+  size: number
+  modified: string
+}
+
+export interface ConfigFolderStructure {
+  configRoot: string
+  automatic: string
+  sscript: string
+}
 
 export type settingChange<K extends settingsKey = settingsKey> = {
   key: K
@@ -57,6 +73,13 @@ export interface electronApi {
   createStudent: (data: { name: string }) => Promise<ipcResponse<number>>
   updateStudent: (id: number, data: any) => Promise<ipcResponse<void>>
   deleteStudent: (id: number) => Promise<ipcResponse<void>>
+
+  // DB - Tags
+  tagsGetAll: () => Promise<ipcResponse<{ id: number; name: string }[]>>
+  tagsGetByStudent: (studentId: number) => Promise<ipcResponse<{ id: number; name: string }[]>>
+  tagsCreate: (name: string) => Promise<ipcResponse<{ id: number; name: string }>>
+  tagsDelete: (id: number) => Promise<ipcResponse<void>>
+  tagsUpdateStudentTags: (studentId: number, tagIds: number[]) => Promise<ipcResponse<void>>
 
   // DB - Reason
   queryReasons: () => Promise<ipcResponse<any[]>>
@@ -150,4 +173,53 @@ export interface electronApi {
     message: string
     meta?: any
   }) => Promise<ipcResponse<void>>
+
+  registerUrlProtocol: () => Promise<ipcResponse<{ registered?: boolean }>>
+
+  // HTTP Server
+  httpServerStart: (config?: {
+    port?: number
+    host?: string
+    corsOrigin?: string
+  }) => Promise<
+    ipcResponse<{ url: string; config: { port: number; host: string; corsOrigin?: string } }>
+  >
+  httpServerStop: () => Promise<ipcResponse<void>>
+  httpServerStatus: () => Promise<
+    ipcResponse<{
+      isRunning: boolean
+      config: { port: number; host: string; corsOrigin?: string }
+      url: string | null
+    }>
+  >
+
+  // File System
+  fsGetConfigStructure: () => Promise<ipcResponse<ConfigFolderStructure>>
+  fsReadJson: (relativePath: string, folder?: 'automatic' | 'sscript') => Promise<ipcResponse<any>>
+  fsWriteJson: (
+    relativePath: string,
+    data: any,
+    folder?: 'automatic' | 'sscript'
+  ) => Promise<ipcResponse<void>>
+  fsReadText: (
+    relativePath: string,
+    folder?: 'automatic' | 'sscript'
+  ) => Promise<ipcResponse<string | null>>
+  fsWriteText: (
+    content: string,
+    relativePath: string,
+    folder?: 'automatic' | 'sscript'
+  ) => Promise<ipcResponse<void>>
+  fsDeleteFile: (
+    relativePath: string,
+    folder?: 'automatic' | 'sscript'
+  ) => Promise<ipcResponse<void>>
+  fsListFiles: (folder?: 'automatic' | 'sscript') => Promise<ipcResponse<ConfigFileInfo[]>>
+  fsFileExists: (
+    relativePath: string,
+    folder?: 'automatic' | 'sscript'
+  ) => Promise<ipcResponse<boolean>>
+
+  // Generic invoke wrapper (minimal compatibility API)
+  invoke?: (channel: string, ...args: any[]) => Promise<any>
 }

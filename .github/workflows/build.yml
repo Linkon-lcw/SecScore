@@ -81,16 +81,21 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 构建（Windows）
-        run: pnpm -s build:win
+        run: pnpm build:win
+
+      - name: 清理 unpacked 目录
+        shell: pwsh
+        run: |
+          if (Test-Path dist) {
+            Get-ChildItem -Path dist -Directory -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -like '*unpacked*' } |
+              ForEach-Object { Remove-Item -Recurse -Force $_.FullName }
+          }
 
       - uses: actions/upload-artifact@v4
         with:
           name: dist-win
-          path: |
-            dist/*.exe
-            dist/*.msi
-            dist/*.zip
-            dist/latest*.yml
+          path: dist/**
 
   build_mac:
     needs: parse
@@ -116,14 +121,13 @@ jobs:
       - name: 构建（macOS）
         run: pnpm -s build:mac
 
+      - name: 清理 unpacked 目录
+        run: rm -rf dist/*unpacked*
+
       - uses: actions/upload-artifact@v4
         with:
           name: dist-mac
-          path: |
-            dist/*.dmg
-            dist/*.pkg
-            dist/*.zip
-            dist/latest*.yml
+          path: dist/**
 
   build_linux:
     needs: parse
@@ -149,15 +153,13 @@ jobs:
       - name: 构建（Linux）
         run: pnpm -s build:linux
 
+      - name: 清理 unpacked 目录
+        run: rm -rf dist/*unpacked*
+
       - uses: actions/upload-artifact@v4
         with:
           name: dist-linux
-          path: |
-            dist/*.AppImage
-            dist/*.deb
-            dist/*.rpm
-            dist/*.snap
-            dist/latest*.yml
+          path: dist/**
 
   build_unpack:
     needs: parse
@@ -183,13 +185,24 @@ jobs:
       - name: 构建（dir）
         run: pnpm -s build:unpack
 
+      - name: 打包并移除 unpacked 目录
+        shell: pwsh
+        run: |
+          if (Test-Path dist) {
+            $dirs = Get-ChildItem -Path dist -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*unpacked*' }
+            foreach ($d in $dirs) {
+              $zipBase = ($d.Name -replace 'unpacked', 'dir')
+              $zipPath = Join-Path dist "$zipBase.zip"
+              if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
+              Compress-Archive -Path (Join-Path $d.FullName '*') -DestinationPath $zipPath -Force
+              Remove-Item -Recurse -Force $d.FullName
+            }
+          }
+
       - uses: actions/upload-artifact@v4
         with:
           name: dist-unpack
-          path: |
-            dist/*.exe
-            dist/*.zip
-            dist/latest*.yml
+          path: dist/**
 
   release:
     needs: [parse, build_win, build_mac, build_linux, build_unpack]
@@ -200,15 +213,21 @@ jobs:
         with:
           path: artifacts
 
+      - name: 清理 unpacked 目录
+        run: |
+          if [ -d artifacts ]; then
+            find artifacts -type d -name '*unpacked*' -prune -exec rm -rf {} +
+          fi
+
       - name: 发布 Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.parse.outputs.tag }}
           name: SecScore ${{ needs.parse.outputs.tag }}
-          draft: false
+          draft: True
           prerelease: ${{ contains(needs.parse.outputs.version, '-') }}
           files: |
-            artifacts/dist-win/*
-            artifacts/dist-mac/*
-            artifacts/dist-linux/*
-            artifacts/dist-unpack/*
+            artifacts/**/*.zip
+            artifacts/**/*.dmg
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb

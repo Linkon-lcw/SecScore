@@ -2,13 +2,13 @@ import { Context, Service } from '../../shared/kernel'
 import { DataSource } from 'typeorm'
 import path from 'path'
 import fs from 'fs'
-import {
-  ReasonEntity,
-  ScoreEventEntity,
-  SettlementEntity,
-  SettingEntity,
-  StudentEntity
-} from './entities'
+import { StudentEntity } from './entities/StudentEntity'
+import { ReasonEntity } from './entities/ReasonEntity'
+import { ScoreEventEntity } from './entities/ScoreEventEntity'
+import { SettlementEntity } from './entities/SettlementEntity'
+import { SettingEntity } from './entities/SettingEntity'
+import { TagEntity } from './entities/TagEntity'
+import { StudentTagEntity } from './entities/StudentTagEntity'
 import { migrations } from './migrations'
 
 declare module '../../shared/kernel' {
@@ -29,7 +29,15 @@ export class DbManager extends Service {
     this.dataSource = new DataSource({
       type: 'better-sqlite3',
       database: dbPath,
-      entities: [StudentEntity, ReasonEntity, ScoreEventEntity, SettlementEntity, SettingEntity],
+      entities: [
+        StudentEntity,
+        ReasonEntity,
+        ScoreEventEntity,
+        SettlementEntity,
+        SettingEntity,
+        TagEntity,
+        StudentTagEntity
+      ],
       migrations,
       synchronize: false,
       logging: false

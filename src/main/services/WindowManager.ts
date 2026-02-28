@@ -1,27 +1,22 @@
-import { win32 } from 'path'
 import { Service } from '../../shared/kernel'
 import { MainContext } from '../context'
-import { BrowserWindow, shell, screen, nativeTheme } from 'electron'
+import { BrowserWindow, shell } from 'electron'
 import type { BrowserWindowConstructorOptions } from 'electron'
 
 let micaElectron: typeof import('mica-electron') | null = null
 let MicaBrowserWindow: any = null
 let IS_WINDOWS_11 = false
 
-async function initMicaElectron() {
+try {
   if (process.platform === 'win32') {
-    try {
-      const micaModule = await import('mica-electron')
-      micaElectron = micaModule
-      MicaBrowserWindow = micaModule.MicaBrowserWindow
-      IS_WINDOWS_11 = micaModule.IS_WINDOWS_11
-    } catch (error) {
-      console.warn('mica-electron not available:', error)
-    }
+    const micaModule = require('mica-electron')
+    micaElectron = micaModule
+    MicaBrowserWindow = micaModule.MicaBrowserWindow
+    IS_WINDOWS_11 = micaModule.IS_WINDOWS_11
   }
+} catch (error) {
+  console.warn('mica-electron not available:', error)
 }
-
-initMicaElectron()
 
 interface MicaWindow extends BrowserWindow {
   setMicaEffect(): void
@@ -46,7 +41,6 @@ export type windowOpenInput = {
   title?: string
   route?: string
   options?: BrowserWindowConstructorOptions
-  useMica?: boolean
 }
 
 export type windowManagerOptions = {
@@ -99,8 +93,8 @@ export class WindowManager extends Service {
     }
 
     const baseOptions: BrowserWindowConstructorOptions = {
-      width: 900,
-      height: 670,
+      width: 1180,
+      height: 680,
       show: false,
       autoHideMenuBar: true,
       frame: false,
@@ -115,54 +109,16 @@ export class WindowManager extends Service {
       ...input.options
     }
 
-    // Special options for different window types
-    if (input.key === 'global-sidebar') {
-      baseOptions.resizable = false
-      baseOptions.frame = false
-    } else if (input.key === 'main') {
-      // 主窗口：使用原生标题栏，但不显示操作按钮
-      baseOptions.frame = true
-      baseOptions.transparent = false
-      baseOptions.titleBarStyle = `${win32 ? 'hidden' : 'hidden'}`
-      baseOptions.titleBarOverlay = {
-        height: 48,
-        color: '#00000000'
-      } // 允许自定义标题栏区域
-      baseOptions.backgroundColor = '#ffffff'
-      baseOptions.resizable = true
-      baseOptions.minimizable = true
-      baseOptions.maximizable = true
-    } else {
-      // 其他窗口：默认可调整大小，带完整框架
-      baseOptions.resizable = true
-      baseOptions.frame = true
-    }
-
     let win: BrowserWindow
-    if (input.useMica && MicaBrowserWindow) {
+    if (MicaBrowserWindow) {
       win = new MicaBrowserWindow(baseOptions)
+      this.applyMicaEffect(win)
     } else {
       win = new BrowserWindow(baseOptions)
     }
 
-    // Special positioning for global sidebar
-    if (input.key === 'global-sidebar') {
-      const primaryDisplay = screen.getPrimaryDisplay()
-      const { width, height } = primaryDisplay.workAreaSize
-      const winWidth = 84
-      const winHeight = 300
-      win.setBounds({
-        x: width - winWidth,
-        y: Math.floor(height / 2 - winHeight / 2),
-        width: winWidth,
-        height: winHeight
-      })
-      win.setAlwaysOnTop(true, 'screen-saver')
-      win.setVisibleOnAllWorkspaces(true)
-      win.setSkipTaskbar(true)
-    }
-
-    const zoom = Number(this.mainCtx.settings.getValue('window_zoom')) || 1.0
+    const zoomSettings = this.mainCtx.settings
+    const zoom = zoomSettings ? Number(zoomSettings.getValue('window_zoom')) || 1.0 : 1.0
     win.webContents.setZoomFactor(zoom)
 
     this.windows.set(input.key, win)
@@ -185,33 +141,21 @@ export class WindowManager extends Service {
     // Notify renderer about maximize state changes
     win.on('maximize', () => {
       win.webContents.send('window:maximized-changed', true)
-      // Fix Windows resize issue after maximize
-      if (process.platform === 'win32') {
-        setTimeout(() => {
-          win.setResizable(true)
-          win.setMaximizable(true)
-          win.setMinimizable(true)
-        }, 100)
-      }
     })
     win.on('unmaximize', () => {
       win.webContents.send('window:maximized-changed', false)
-      // Fix Windows resize issue after unmaximize
-      if (process.platform === 'win32') {
-        setTimeout(() => {
-          win.setResizable(true)
-          win.setMaximizable(true)
-          win.setMinimizable(true)
-        }, 100)
-      }
     })
 
     win.on('blur', () => {
-      // Mica effect is no longer applied automatically
+      if (input.key === 'main') {
+        this.applyMicaEffect(win)
+      }
     })
 
     win.on('focus', () => {
-      // Mica effect is no longer applied automatically
+      if (input.key === 'main') {
+        this.applyMicaEffect(win)
+      }
     })
 
     win.webContents.setWindowOpenHandler((details) => {
@@ -223,29 +167,69 @@ export class WindowManager extends Service {
     return win
   }
 
+  private applyMicaEffect(win: BrowserWindow) {
+    if (!micaElectron) return
+    const settings = this.mainCtx.settings
+    if (!settings) return
+    const micaWin = win as MicaWindow
+    const theme = settings.getValue('window_theme')
+    switch (theme) {
+      case 'dark':
+        micaWin.setDarkTheme()
+        break
+      case 'light':
+        micaWin.setLightTheme()
+        break
+      default:
+        micaWin.setAutoTheme()
+    }
+
+    const effect = settings.getValue('window_effect')
+    switch (effect) {
+      case 'mica':
+        micaWin.setMicaEffect()
+        break
+      case 'tabbed':
+        micaWin.setMicaTabbedEffect()
+        break
+      case 'acrylic':
+        if (IS_WINDOWS_11) {
+          micaWin.setMicaAcrylicEffect()
+        } else {
+          micaWin.setAcrylic()
+        }
+        break
+      case 'blur':
+        if (!IS_WINDOWS_11) {
+          micaWin.setBlur()
+        }
+        break
+      case 'transparent':
+        if (!IS_WINDOWS_11) {
+          micaWin.setTransparent()
+        }
+        break
+    }
+
+    const radius = settings.getValue('window_radius')
+    switch (radius) {
+      case 'small':
+        micaWin.setSmallRoundedCorner()
+        break
+      case 'square':
+        micaWin.setSquareCorner()
+        break
+      default:
+        micaWin.setRoundedCorner()
+    }
+  }
+
   public setMicaEffect(
     win: BrowserWindow,
     effect: 'mica' | 'tabbed' | 'acrylic' | 'blur' | 'transparent' | 'none' = 'mica'
   ) {
-    if (process.platform === 'win32' && IS_WINDOWS_11) {
-      const materialMap: Record<string, 'mica' | 'tabbed' | 'acrylic' | 'none'> = {
-        mica: 'mica',
-        tabbed: 'tabbed',
-        acrylic: 'acrylic',
-        blur: 'mica',
-        transparent: 'none',
-        none: 'none'
-      }
-      win.setBackgroundMaterial(materialMap[effect] || 'none')
-      return
-    }
-
-    if (!micaElectron || !MicaBrowserWindow) return
+    if (!micaElectron) return
     const micaWin = win as MicaWindow
-
-    if (typeof micaWin.setMicaEffect !== 'function') {
-      return
-    }
 
     switch (effect) {
       case 'mica':
@@ -280,26 +264,8 @@ export class WindowManager extends Service {
   }
 
   public setMicaTheme(win: BrowserWindow, theme: 'auto' | 'dark' | 'light' = 'auto') {
-    if (process.platform === 'win32' && IS_WINDOWS_11) {
-      switch (theme) {
-        case 'dark':
-          nativeTheme.themeSource = 'dark'
-          break
-        case 'light':
-          nativeTheme.themeSource = 'light'
-          break
-        default:
-          nativeTheme.themeSource = 'system'
-      }
-      return
-    }
-
-    if (!micaElectron || !MicaBrowserWindow) return
+    if (!micaElectron) return
     const micaWin = win as MicaWindow
-
-    if (typeof micaWin.setDarkTheme !== 'function') {
-      return
-    }
 
     switch (theme) {
       case 'dark':
@@ -314,16 +280,8 @@ export class WindowManager extends Service {
   }
 
   public setMicaCorner(win: BrowserWindow, corner: 'rounded' | 'small' | 'square' = 'rounded') {
-    if (process.platform === 'win32' && IS_WINDOWS_11) {
-      return
-    }
-
-    if (!micaElectron || !MicaBrowserWindow) return
+    if (!micaElectron) return
     const micaWin = win as MicaWindow
-
-    if (typeof micaWin.setRoundedCorner !== 'function') {
-      return
-    }
 
     switch (corner) {
       case 'small':
@@ -338,38 +296,20 @@ export class WindowManager extends Service {
   }
 
   public setMicaBorderColor(win: BrowserWindow, color: string | null) {
-    if (process.platform === 'win32' && IS_WINDOWS_11) {
-      return
-    }
-    if (!micaElectron || !MicaBrowserWindow) return
+    if (!micaElectron) return
     const micaWin = win as MicaWindow
-    if (typeof micaWin.setBorderColor !== 'function') {
-      return
-    }
     micaWin.setBorderColor(color)
   }
 
   public setMicaCaptionColor(win: BrowserWindow, color: string | null) {
-    if (process.platform === 'win32' && IS_WINDOWS_11) {
-      return
-    }
-    if (!micaElectron || !MicaBrowserWindow) return
+    if (!micaElectron) return
     const micaWin = win as MicaWindow
-    if (typeof micaWin.setCaptionColor !== 'function') {
-      return
-    }
     micaWin.setCaptionColor(color)
   }
 
   public setMicaTitleTextColor(win: BrowserWindow, color: string | null) {
-    if (process.platform === 'win32' && IS_WINDOWS_11) {
-      return
-    }
-    if (!micaElectron || !MicaBrowserWindow) return
+    if (!micaElectron) return
     const micaWin = win as MicaWindow
-    if (typeof micaWin.setTitleTextColor !== 'function') {
-      return
-    }
     micaWin.setTitleTextColor(color)
   }
 
@@ -446,25 +386,9 @@ export class WindowManager extends Service {
       if (win) {
         if (win.isMaximized()) {
           win.unmaximize()
-          // Fix Windows resize issue after unmaximize
-          if (process.platform === 'win32') {
-            setTimeout(() => {
-              win.setResizable(true)
-              win.setMaximizable(true)
-              win.setMinimizable(true)
-            }, 150)
-          }
           return false
         } else {
           win.maximize()
-          // Fix Windows resize issue after maximize
-          if (process.platform === 'win32') {
-            setTimeout(() => {
-              win.setResizable(true)
-              win.setMaximizable(true)
-              win.setMinimizable(true)
-            }, 150)
-          }
           return true
         }
       }
@@ -499,21 +423,19 @@ export class WindowManager extends Service {
       }
     })
 
-    this.mainCtx.handle(
-      'window:resize',
-      (event, width: number, height: number, x?: number, y?: number) => {
-        const win = BrowserWindow.fromWebContents(event.sender)
-        if (win) {
-          const bounds = win.getBounds()
-          win.setBounds({
-            x: x ?? bounds.x,
-            y: y ?? bounds.y,
-            width,
-            height
-          })
-        }
+    this.mainCtx.handle('window:resize', (event, width: number, height: number) => {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (win) {
+        const bounds = win.getBounds()
+        const newX = bounds.x + (bounds.width - width)
+        win.setBounds({
+          x: newX,
+          y: bounds.y,
+          width,
+          height
+        })
       }
-    )
+    })
 
     this.mainCtx.handle('window:mica-effect', (_event, effect: string) => {
       const win = BrowserWindow.fromWebContents(_event.sender)

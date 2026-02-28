@@ -5,8 +5,11 @@ out
 .eslintcache
 *.log*
 logs
+docs
+configs
 
-build
+build/*
+!build/entitlements.mac.plist
 db.sqlite
 *.local
 .env.local

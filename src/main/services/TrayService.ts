@@ -30,7 +30,7 @@ export class TrayService extends Service {
       },
       { type: 'separator' },
       {
-        label: '退出 SecScore',
+        label: '关闭应用',
         click: () => {
           app.quit()
         }

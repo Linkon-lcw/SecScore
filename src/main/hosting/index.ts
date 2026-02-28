@@ -12,9 +12,13 @@ export {
   ReasonRepositoryToken,
   EventRepositoryToken,
   SettlementRepositoryToken,
+  TagRepositoryToken,
   ThemeServiceToken,
   WindowManagerToken,
-  TrayServiceToken
+  TrayServiceToken,
+  AutoScoreServiceToken,
+  HttpServerServiceToken,
+  FileSystemServiceToken
 } from './tokens'
 export type {
   appRuntimeContext,

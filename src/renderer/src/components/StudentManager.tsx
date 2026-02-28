@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { Table, Button, Space, MessagePlugin, Dialog, Form, Input } from 'tdesign-react'
+import { Table, Button, Space, MessagePlugin, Dialog, Form, Input, Tag } from 'tdesign-react'
 import type { PrimaryTableCol } from 'tdesign-react'
+import { TagEditorDialog } from './TagEditorDialog'
 
 // 创建 XLSX Worker
 const createXlsxWorker = () => {
@@ -13,14 +14,20 @@ interface student {
   id: number
   name: string
   score: number
+  tags?: string[]
+  tagIds?: number[]
 }
 
 export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
   const [data, setData] = useState<student[]>([])
   const [loading, setLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState<number>(50)
   const [visible, setVisible] = useState(false)
   const [importVisible, setImportVisible] = useState(false)
   const [xlsxVisible, setXlsxVisible] = useState(false)
+  const [tagEditVisible, setTagEditVisible] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<student | null>(null)
   const [xlsxLoading, setXlsxLoading] = useState(false)
   const [xlsxFileName, setXlsxFileName] = useState('')
   const [xlsxAoa, setXlsxAoa] = useState<any[][]>([])
@@ -47,7 +54,37 @@ export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
     try {
       const res = await (window as any).api.queryStudents({})
       if (res.success && res.data) {
-        setData(res.data)
+        try {
+          const students = await Promise.all(
+            (res.data as any[]).map(async (s) => {
+              let tagIds: number[] = []
+              let tags: string[] = []
+
+              try {
+                const tagsRes = await (window as any).api.tagsGetByStudent(s.id)
+                if (tagsRes.success && tagsRes.data) {
+                  tagIds = tagsRes.data.map((t: any) => t.id)
+                  tags = tagsRes.data.map((t: any) => t.name)
+                }
+              } catch (e) {
+                console.warn('Failed to fetch tags for student:', s.id, e)
+              }
+
+              return {
+                id: s.id,
+                name: s.name,
+                score: s.score,
+                tags,
+                tagIds
+              }
+            })
+          )
+          console.debug('Fetched students:', students)
+          setData(students)
+        } catch (e) {
+          console.warn('Failed to parse students response, falling back:', e)
+          setData(res.data)
+        }
       }
     } catch (e) {
       console.error('Failed to fetch students:', e)
@@ -128,6 +165,36 @@ export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
       emitDataUpdated('students')
     } else {
       MessagePlugin.error(res.message || '删除失败')
+    }
+  }
+
+  const handleOpenTagEditor = (student: student) => {
+    if (!canEdit) {
+      MessagePlugin.error('当前为只读权限')
+      return
+    }
+    setEditingStudent(student)
+    setTagEditVisible(true)
+  }
+
+  const handleSaveTags = async (tagIds: number[]) => {
+    if (!editingStudent || !(window as any).api) return
+
+    try {
+      const res = await (window as any).api.tagsUpdateStudentTags(editingStudent.id, tagIds)
+      if (res && res.success) {
+        MessagePlugin.success('标签保存成功')
+        setTagEditVisible(false)
+        setEditingStudent(null)
+        fetchStudents()
+        emitDataUpdated('students')
+      } else {
+        const errorMsg = res?.message || '保存标签失败'
+        MessagePlugin.error(errorMsg)
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      MessagePlugin.error(`保存标签失败: ${errorMsg}`)
     }
   }
 
@@ -282,11 +349,11 @@ export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
   }
 
   const columns: PrimaryTableCol<student>[] = [
-    { colKey: 'name', title: '姓名', width: 200 },
+    { colKey: 'name', title: '姓名', width: 100 },
     {
       colKey: 'score',
       title: '当前积分',
-      width: 120,
+      width: 160,
       align: 'center',
       cell: ({ row }) => (
         <span
@@ -305,11 +372,45 @@ export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
       )
     },
     {
+      colKey: 'tags',
+      title: '标签',
+      width: 200,
+      cell: ({ row }) => {
+        const tags = row.tags || []
+        return (
+          <Space>
+            {tags.length === 0 ? (
+              <span style={{ color: 'var(--ss-text-secondary)' }}>无标签</span>
+            ) : (
+              tags.slice(0, 3).map((tag) => (
+                <Tag key={tag} theme="primary" size="small">
+                  {tag}
+                </Tag>
+              ))
+            )}
+            {tags.length > 3 && (
+              <Tag theme="default" size="small">
+                +{tags.length - 3}
+              </Tag>
+            )}
+          </Space>
+        )
+      }
+    },
+    {
       colKey: 'operation',
       title: '操作',
-      width: 100,
+      width: 150,
       cell: ({ row }) => (
         <Space>
+          <Button
+            theme="default"
+            variant="text"
+            disabled={!canEdit}
+            onClick={() => handleOpenTagEditor(row)}
+          >
+            编辑标签
+          </Button>
           <Button
             theme="danger"
             variant="text"
@@ -338,14 +439,18 @@ export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
       </div>
 
       <Table
-        data={data}
+        data={data.slice((currentPage - 1) * pageSize, currentPage * pageSize)}
         columns={columns}
         rowKey="id"
         loading={loading}
-        bordered
         hover
-        pagination={{ pageSize: 50, total: data.length, defaultCurrent: 1 }}
-        scroll={{ type: 'virtual', rowHeight: 48, threshold: 100 }}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          total: data.length,
+          onChange: (pageInfo) => setCurrentPage(pageInfo.current),
+          onPageSizeChange: (size) => setPageSize(size)
+        }}
         style={{ backgroundColor: 'var(--ss-card-bg)', color: 'var(--ss-text-main)' }}
       />
 
@@ -421,6 +526,18 @@ export const StudentManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
           style={{ backgroundColor: 'var(--ss-card-bg)', color: 'var(--ss-text-main)' }}
         />
       </Dialog>
+
+      {/* 标签编辑弹窗 */}
+      <TagEditorDialog
+        visible={tagEditVisible}
+        onClose={() => {
+          setTagEditVisible(false)
+          setEditingStudent(null)
+        }}
+        onConfirm={handleSaveTags}
+        initialTagIds={editingStudent?.tagIds || []}
+        title={`编辑标签 - ${editingStudent?.name || ''}`}
+      />
     </div>
   )
 }

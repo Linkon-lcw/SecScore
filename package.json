@@ -1,6 +1,6 @@
 {
   "name": "secscore",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "SecScore – Your Education Points Management Expert",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -16,18 +16,22 @@
     "dev": "electron-vite dev",
     "build": "node scripts/clean-db.mjs && pnpm -s typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
-    "build:unpack": "pnpm -s build && electron-builder --dir",
-    "build:win": "pnpm -s build && electron-builder --win",
-    "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux"
+    "build:unpack": "pnpm -s build && electron-builder --dir --publish never",
+    "build:win": "pnpm -s build && electron-builder --win --publish never",
+    "build:mac": "electron-vite build && electron-builder --mac --publish never",
+    "build:linux": "electron-vite build && electron-builder --linux --publish never"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "better-sqlite3": "^12.6.0",
     "chokidar": "^5.0.0",
+    "es-object-atoms": "^1.1.1",
+    "express": "^5.2.1",
     "mica-electron": "^1.5.16",
+    "os": "^0.1.2",
     "pinyin-pro": "^3.27.0",
+    "prismjs": "^1.30.0",
     "react-router-dom": "^6.28.0",
     "reflect-metadata": "^0.2.2",
     "tdesign-react": "^1.16.3",
@@ -35,8 +39,7 @@
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0",
-    "xlsx": "^0.18.5",
-    "pnpm": "^8.1.2"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",

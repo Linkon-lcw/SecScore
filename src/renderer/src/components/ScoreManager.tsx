@@ -138,7 +138,12 @@ export const ScoreManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
       return
     }
     const values = form.getFieldsValue(true) as any
-    if (!values.student_name || !values.reason_content) {
+
+    // 支持多选学生
+    const studentNames = Array.isArray(values.student_name)
+      ? values.student_name
+      : [values.student_name]
+    if (!studentNames || studentNames.length === 0 || !values.reason_content) {
       MessagePlugin.warning('请填写完整信息')
       return
     }
@@ -161,26 +166,39 @@ export const ScoreManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
         : Math.abs(deltaInput)
       : Number(selectedReason?.delta ?? 0)
 
-    const res = await (window as any).api.createEvent({
-      student_name: values.student_name,
-      reason_content: values.reason_content,
-      delta: delta
-    })
+    // 为每个选中的学生创建事件
+    try {
+      let successCount = 0
+      for (const studentName of studentNames) {
+        const res = await (window as any).api.createEvent({
+          student_name: studentName,
+          reason_content: values.reason_content,
+          delta: delta
+        })
+        if (res.success) {
+          successCount++
+        }
+      }
 
-    if (res.success) {
-      MessagePlugin.success('积分提交成功')
-      form.setFieldsValue({
-        delta: undefined,
-        reason_content: '',
-        reason_id: undefined,
-        type: 'add'
-      })
-      fetchData()
-      emitDataUpdated('events')
-    } else {
-      MessagePlugin.error(res.message || '提交失败')
+      if (successCount === studentNames.length) {
+        MessagePlugin.success(`已为 ${successCount} 名学生提交积分`)
+        form.setFieldsValue({
+          student_name: [],
+          delta: undefined,
+          reason_content: '',
+          reason_id: undefined,
+          type: 'add'
+        })
+        fetchData()
+        emitDataUpdated('events')
+      } else {
+        MessagePlugin.warning(`成功提交 ${successCount}/${studentNames.length} 名学生的积分`)
+        fetchData()
+        emitDataUpdated('events')
+      }
+    } finally {
+      setSubmitLoading(false)
     }
-    setSubmitLoading(false)
   }
 
   const handleUndo = async (uuid: string) => {
@@ -250,6 +268,7 @@ export const ScoreManager: React.FC<{ canEdit: boolean }> = ({ canEdit }) => {
             <Form.FormItem label="姓名" name="student_name">
               <Select
                 filterable
+                multiple
                 placeholder="请选择或搜索学生"
                 filter={(filterWords, option) =>
                   matchStudentName(getOptionLabel(option), filterWords)

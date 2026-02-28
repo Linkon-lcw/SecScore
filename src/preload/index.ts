@@ -28,6 +28,14 @@ const api = {
   importStudentsFromXlsx: (params: { names: string[] }) =>
     ipcRenderer.invoke('db:student:importFromXlsx', params),
 
+  // DB - Tags
+  tagsGetAll: () => ipcRenderer.invoke('tags:getAll'),
+  tagsGetByStudent: (studentId: number) => ipcRenderer.invoke('tags:getByStudent', studentId),
+  tagsCreate: (name: string) => ipcRenderer.invoke('tags:create', name),
+  tagsDelete: (id: number) => ipcRenderer.invoke('tags:delete', id),
+  tagsUpdateStudentTags: (studentId: number, tagIds: number[]) =>
+    ipcRenderer.invoke('tags:updateStudentTags', studentId, tagIds),
+
   // DB - Reason
   queryReasons: () => ipcRenderer.invoke('db:reason:query'),
   createReason: (data: any) => ipcRenderer.invoke('db:reason:create', data),
@@ -101,7 +109,35 @@ const api = {
   clearLogs: () => ipcRenderer.invoke('log:clear'),
   setLogLevel: (level: string) => ipcRenderer.invoke('log:setLevel', level),
   writeLog: (payload: { level: string; message: string; meta?: any }) =>
-    ipcRenderer.invoke('log:write', payload)
+    ipcRenderer.invoke('log:write', payload),
+
+  registerUrlProtocol: () => ipcRenderer.invoke('app:register-url-protocol'),
+
+  // HTTP Server
+  httpServerStart: (config?: { port?: number; host?: string; corsOrigin?: string }) =>
+    ipcRenderer.invoke('http:server:start', config),
+  httpServerStop: () => ipcRenderer.invoke('http:server:stop'),
+  httpServerStatus: () => ipcRenderer.invoke('http:server:status'),
+
+  // File System
+  fsGetConfigStructure: () => ipcRenderer.invoke('fs:getConfigStructure'),
+  fsReadJson: (relativePath: string, folder?: 'automatic' | 'script') =>
+    ipcRenderer.invoke('fs:readJson', relativePath, folder ?? 'automatic'),
+  fsWriteJson: (relativePath: string, data: any, folder?: 'automatic' | 'script') =>
+    ipcRenderer.invoke('fs:writeJson', relativePath, data, folder ?? 'automatic'),
+  fsReadText: (relativePath: string, folder?: 'automatic' | 'script') =>
+    ipcRenderer.invoke('fs:readText', relativePath, folder ?? 'automatic'),
+  fsWriteText: (content: string, relativePath: string, folder?: 'automatic' | 'script') =>
+    ipcRenderer.invoke('fs:writeText', content, relativePath, folder ?? 'automatic'),
+  fsDeleteFile: (relativePath: string, folder?: 'automatic' | 'script') =>
+    ipcRenderer.invoke('fs:deleteFile', relativePath, folder ?? 'automatic'),
+  fsListFiles: (folder?: 'automatic' | 'script') =>
+    ipcRenderer.invoke('fs:listFiles', folder ?? 'automatic'),
+  fsFileExists: (relativePath: string, folder?: 'automatic' | 'script') =>
+    ipcRenderer.invoke('fs:fileExists', relativePath, folder ?? 'automatic'),
+
+  // Generic invoke wrapper for backward compatibility with callers using `api.invoke`
+  invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args)
 }
 
 if (process.contextIsolated) {

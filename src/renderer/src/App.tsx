@@ -6,12 +6,13 @@ import { ContentArea } from './components/ContentArea'
 import { Wizard } from './components/Wizard'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ThemeEditorProvider } from './contexts/ThemeEditorContext'
-import { GlobalSidebar } from './components/GlobalSidebar'
 import { ThemeEditor } from './components/ThemeEditor'
+import { useTheme } from './contexts/ThemeContext'
 
 function MainContent(): React.JSX.Element {
   const navigate = useNavigate()
   const location = useLocation()
+  const { currentTheme } = useTheme()
 
   useEffect(() => {
     if (!(window as any).api) return
@@ -42,6 +43,7 @@ function MainContent(): React.JSX.Element {
     if (p.startsWith('/leaderboard')) return 'leaderboard'
     if (p.startsWith('/settlements')) return 'settlements'
     if (p.startsWith('/reasons')) return 'reasons'
+    if (p.startsWith('/auto-score')) return 'auto-score'
     if (p.startsWith('/settings')) return 'settings'
     return 'home'
   }, [location.pathname])
@@ -104,6 +106,7 @@ function MainContent(): React.JSX.Element {
     if (key === 'leaderboard') navigate('/leaderboard')
     if (key === 'settlements') navigate('/settlements')
     if (key === 'reasons') navigate('/reasons')
+    if (key === 'auto-score') navigate('/auto-score')
     if (key === 'settings') navigate('/settings')
   }
 
@@ -138,17 +141,80 @@ function MainContent(): React.JSX.Element {
           />
         </div>
       </Dialog>
+
+      {import.meta.env.DEV ? (
+        <div
+          style={{
+            position: 'fixed',
+            display: 'flex',
+            bottom: '2px',
+            left: '20px',
+            opacity: 0.6,
+            zIndex: 9999
+          }}
+        >
+          <p
+            style={{
+              color: '#df0000',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              pointerEvents: 'none'
+            }}
+          >
+            开发中画面,不代表最终品质
+          </p>
+          <p
+            style={{
+              color: currentTheme?.mode === 'dark' ? '#fff' : '#44474b',
+              fontWeight: 'bold',
+              fontSize: '13px',
+              paddingLeft: '5px'
+            }}
+          >
+            SecScore Dev ({getPlatform()}-{getArchitecture()})
+          </p>
+        </div>
+      ) : null}
     </Layout>
   )
 }
 
+function getArchitecture(): string {
+  // 尝试从 userAgent 中获取架构信息
+  const userAgent = navigator.userAgent.toLowerCase()
+
+  if (userAgent.includes('arm64') || userAgent.includes('aarch64')) {
+    return 'ARM64'
+  } else if (userAgent.includes('x64') || userAgent.includes('amd64')) {
+    return 'x64'
+  } else if (userAgent.includes('i386') || userAgent.includes('i686')) {
+    return 'x86'
+  }
+
+  // 默认返回未知架构
+  return userAgent
+}
+
+function getPlatform(): string {
+  // 尝试从 userAgent 中获取平台信息
+  const userAgent = navigator.userAgent.toLowerCase()
+
+  if (userAgent.includes('windows')) {
+    return 'Windows'
+  } else if (userAgent.includes('mac')) {
+    return 'Mac'
+  } else if (userAgent.includes('linux')) {
+    return 'Linux'
+  }
+
+  return 'Unknown'
+}
 function App(): React.JSX.Element {
   return (
     <ThemeProvider>
       <ThemeEditorProvider>
         <HashRouter>
           <Routes>
-            <Route path="/global-sidebar" element={<GlobalSidebar />} />
             <Route path="/*" element={<MainContent />} />
           </Routes>
         </HashRouter>
